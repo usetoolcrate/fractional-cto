@@ -221,7 +221,7 @@
     font-family:'Newsreader',serif;font-style:italic;color:var(--ink-soft);font-size:1.05rem;
   }
 
-  /* ---------- EOL ---------- */
+  /* ---------- EOL / platforms ---------- */
   .eol{background:var(--ink);color:#e9e6df;padding:76px 0}
   .eol .wrap{max-width:900px}
   .eol .opener{font-family:'Newsreader',serif;font-style:italic;color:#d9a441;font-size:1.1rem;margin-bottom:16px}
@@ -232,6 +232,14 @@
     background:rgba(255,255,255,.05);border-radius:0 8px 8px 0;
   }
   .eol .fact p{margin:0;color:#e9e6df;font-size:1.02rem}
+  .plat{border-top:1px dashed rgba(233,230,223,.18);padding:26px 0 22px}
+  .plat h3{
+    font-family:'Newsreader',serif;font-style:italic;font-weight:500;
+    font-size:1.4rem;color:#d9a441;margin-bottom:8px;
+  }
+  .plat p{margin-bottom:0;font-size:.98rem}
+  .plat p a{color:#d9a441}
+  .plat.spec{border-top:1px solid rgba(217,164,65,.5)}
 
   /* ---------- no timesheets ---------- */
   .nots h2{font-size:clamp(1.9rem,3.8vw,2.7rem);max-width:720px;margin-bottom:24px}
@@ -276,6 +284,12 @@
   }
   @media(max-width:640px){.letter-card{padding:36px 26px;transform:none}}
   .letter-card .date{font-size:.85rem;color:var(--ink-faint);margin-bottom:24px}
+  .letter-photo{
+    float:right;width:132px;height:132px;object-fit:cover;border-radius:6px;
+    border:5px solid #fff;box-shadow:0 8px 24px -8px rgba(28,30,33,.4);
+    transform:rotate(2.5deg);margin:0 0 16px 24px;
+  }
+  @media(max-width:640px){.letter-photo{width:96px;height:96px;margin:0 0 12px 16px}}
   .letter-card h2{font-size:1.8rem;margin-bottom:22px}
   .letter-card p{color:var(--ink-soft);margin-bottom:16px;font-size:1rem}
   .letter-card .sig{font-family:'Caveat',cursive;font-size:2rem;color:var(--ink);margin-top:28px}
@@ -494,21 +508,57 @@
 
 <section class="eol" id="eol">
   <div class="wrap">
-    <p class="opener">A note for concrete5 / Concrete CMS owners —</p>
-    <h2>Still on concrete5? Your site stopped getting security updates in 2024.</h2>
+    <p class="opener">Sound familiar? —</p>
+    <h2>Whatever your site runs on, there's a reason it feels heavy.</h2>
     <p>
-      That's not my claim — it's the software vendor's own announcement. Every concrete5 site on
-      version 8 or older has been running without security patches since December 31, 2024.
+      Every website platform makes the same trade: easy to start, expensive to live with.
+      Here's what that trade actually looks like, platform by platform.
     </p>
-    <div class="fact">
-      <p>"Version 8 support has officially ended." — Concrete CMS, official project announcement</p>
+
+    <div class="plat">
+      <h3>Still on WordPress?</h3>
+      <p>It runs roughly two out of five websites on earth — which is exactly why automated attacks
+      hammer it around the clock. The site only stays safe as long as somebody keeps feeding it:
+      core updates, theme updates, plugin updates, and every update can quietly break something else.
+      That somebody is currently you.</p>
     </div>
-    <p>
-      Concrete CMS is my deepest specialty. That means I can read every corner of your existing site
-      and carry all of it — content, addresses, search rankings — into plain, dependency-free code with
-      nothing left to patch and nothing left to hack. If you're on concrete5, mention it when you write:
-      you're the exact client I built this service for.
-    </p>
+
+    <div class="plat">
+      <h3>Still on Wix?</h3>
+      <p>You're renting, not owning. There is no way to move a Wix site to another host — the day you
+      stop paying, the site is gone. Your business's front door, built on land you can never buy.</p>
+    </div>
+
+    <div class="plat">
+      <h3>Still on Squarespace?</h3>
+      <p>Beautiful — right up until you need something the template didn't plan for. And when you
+      outgrow it, the design can't leave with you: you can export some of the content, but the site
+      itself stays behind.</p>
+    </div>
+
+    <div class="plat">
+      <h3>Still on "a developer built it years ago"?</h3>
+      <p>And now nobody answers the phone, nobody has the passwords, and everyone's afraid to touch it.
+      That's exactly what door one — <a href="#offer">"take over my site"</a> — exists for.</p>
+    </div>
+
+    <div class="plat spec">
+      <h3>Still on concrete5?</h3>
+      <p>
+        Then it's more urgent than a drawback: your site stopped getting security updates entirely.
+        That's not my claim — it's the software vendor's own announcement. Every concrete5 site on
+        version 8 or older has been running without security patches since December 31, 2024.
+      </p>
+      <div class="fact">
+        <p>"Version 8 support has officially ended." — Concrete CMS, official project announcement</p>
+      </div>
+      <p>
+        Concrete CMS is my deepest specialty. I can read every corner of your existing site and carry
+        all of it — content, addresses, search rankings — into plain, dependency-free code with nothing
+        left to patch and nothing left to hack. If you're on concrete5, mention it when you write:
+        you're the exact client I built this service for.
+      </p>
+    </div>
   </div>
 </section>
 
@@ -620,6 +670,7 @@
 <section class="letter" id="about">
   <div class="wrap">
     <div class="letter-card">
+      <img class="letter-photo" src="assets/alexander.jpg" alt="Alexander Schottky" width="132" height="132">
       <div class="date">From my desk in Missouri</div>
       <h2>Why I work this way</h2>
       <p>
