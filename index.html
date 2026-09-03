@@ -20,7 +20,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600;700&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
 
 <style>
   :root{
@@ -29,7 +29,7 @@
     --ink:#1c1e21;
     --ink-soft:#4a4f56;
     --ink-faint:#8a8f96;
-    --accent:#1f5c48;        /* deep forest green */
+    --accent:#1f5c48;
     --accent-bright:#2b7a5f;
     --brass:#b0812f;
     --line:#e2dcd0;
@@ -52,6 +52,7 @@
   img{max-width:100%;display:block}
   .wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
   section{padding:88px 0}
+  .hand{font-family:'Caveat',cursive;color:var(--brass);font-size:1.35rem;line-height:1.3}
 
   /* ---------- header ---------- */
   header{
@@ -70,9 +71,9 @@
   .btn{
     display:inline-block;background:var(--accent);color:#fff;
     padding:12px 26px;border-radius:6px;font-weight:600;font-size:.95rem;
-    transition:background .15s ease,transform .15s ease;
+    transition:background .15s ease;
   }
-  .btn:hover{background:var(--accent-bright);text-decoration:none;transform:translateY(-1px)}
+  .btn:hover{background:var(--accent-bright);text-decoration:none}
   .btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
   .btn.ghost:hover{background:var(--accent);color:#fff}
   .btn.big{padding:16px 34px;font-size:1.02rem}
@@ -81,16 +82,21 @@
   .hero{padding:96px 0 72px}
   .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:64px;align-items:center}
   @media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:48px}}
-  .kicker{
-    font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;
-    color:var(--brass);font-weight:700;margin-bottom:22px;
-  }
   .hero h1{font-size:clamp(2.6rem,5.8vw,4.2rem);margin-bottom:26px}
-  .hero h1 em{font-style:italic;color:var(--accent)}
+  .hero h1 em{
+    font-style:italic;color:var(--accent);position:relative;white-space:nowrap;
+  }
+  .hero h1 em svg{
+    position:absolute;left:0;bottom:-0.18em;width:100%;height:.28em;overflow:visible;
+  }
   .hero .sub{font-size:1.16rem;color:var(--ink-soft);max-width:560px;margin-bottom:36px}
   .hero .sub strong{color:var(--ink)}
   .hero-ctas{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
   .hero-note{font-size:.88rem;color:var(--ink-faint);margin-top:18px}
+  .hero-opener{
+    font-family:'Newsreader',serif;font-style:italic;font-size:1.15rem;
+    color:var(--brass);margin-bottom:18px;
+  }
 
   /* ---------- slack mock ---------- */
   .chat{
@@ -116,11 +122,10 @@
   .msg .who{font-size:.82rem;font-weight:700;margin-bottom:2px}
   .msg .who span{font-weight:400;color:var(--ink-faint);font-size:.76rem;margin-left:6px}
   .msg p{font-size:.92rem;color:var(--ink-soft);line-height:1.5}
-  .chat-foot{
-    border-top:1px solid var(--line);padding:12px 20px;font-size:.8rem;color:var(--ink-faint);
-    font-style:italic;
+  .chat-annot{
+    display:flex;align-items:flex-start;gap:6px;margin-top:18px;justify-content:center;
   }
-  .chat-caption{font-size:.85rem;color:var(--ink-faint);text-align:center;margin-top:16px}
+  .chat-annot svg{flex-shrink:0;margin-top:2px}
 
   /* ---------- proof bar ---------- */
   .proof-bar{
@@ -144,41 +149,51 @@
     background:linear-gradient(to top, rgba(18,32,26,.88) 0%, rgba(18,32,26,.35) 55%, rgba(18,32,26,.15) 100%);
   }
   .band .wrap{position:relative;padding-top:80px;padding-bottom:56px}
-  .band .kicker{color:#d9a441}
   .band h2{color:#fff;font-size:clamp(1.8rem,3.8vw,2.6rem);max-width:640px;margin-bottom:14px}
   .band p{color:rgba(255,255,255,.85);max-width:560px;font-size:1.05rem}
+  .band .hand{color:#d9a441;font-size:1.5rem;margin-bottom:10px}
   .band-drafting{background-image:url('assets/drafting.jpg')}
   .band-clocks{background-image:url('assets/clocks.jpg');background-position:center 30%}
 
-  /* ---------- philosophy ---------- */
-  .phil h2{font-size:clamp(1.9rem,3.8vw,2.7rem);max-width:760px;margin-bottom:26px}
-  .phil .lead{font-size:1.15rem;color:var(--ink-soft);max-width:700px;margin-bottom:56px}
-  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:28px}
-  .card{
-    background:var(--card);border:1px solid var(--line);border-radius:12px;
-    padding:32px 30px;transition:transform .18s ease, box-shadow .18s ease;
+  /* ---------- philosophy: asymmetric editorial ---------- */
+  .phil .wrap{max-width:980px}
+  .phil h2{font-size:clamp(1.9rem,3.8vw,2.7rem);max-width:700px;margin-bottom:26px}
+  .phil .lead{font-size:1.15rem;color:var(--ink-soft);max-width:660px;margin-bottom:64px}
+  .phil-row{
+    display:grid;grid-template-columns:80px 1fr;gap:28px;
+    padding:36px 0;border-top:1px solid var(--line);
+    align-items:start;
   }
-  .card:hover{transform:translateY(-3px);box-shadow:0 16px 40px -20px rgba(28,30,33,.25)}
-  .card h3{font-size:1.3rem;margin-bottom:12px}
-  .card p{font-size:.97rem;color:var(--ink-soft)}
-  .card .num{
-    font-family:'Newsreader',serif;font-size:.85rem;color:var(--brass);
-    letter-spacing:.1em;font-weight:600;display:block;margin-bottom:14px;
+  .phil-row:last-of-type{border-bottom:1px solid var(--line)}
+  .phil-num{
+    font-family:'Newsreader',serif;font-style:italic;font-size:2.6rem;color:var(--brass);
+    line-height:1;padding-top:4px;
   }
+  .phil-row h3{font-size:1.45rem;margin-bottom:10px}
+  .phil-row p{color:var(--ink-soft);max-width:640px}
+  .phil-row .aside{
+    font-family:'Newsreader',serif;font-style:italic;color:var(--ink-faint);
+    font-size:.98rem;margin-top:10px;
+  }
+  @media(max-width:640px){.phil-row{grid-template-columns:1fr;gap:8px}.phil-num{font-size:2rem}}
 
-  /* ---------- offer: three doors ---------- */
+  /* ---------- offer: three doors, uneven ---------- */
   .offer{background:var(--paper-deep)}
   .offer h2{font-size:clamp(1.9rem,3.8vw,2.7rem);margin-bottom:14px}
-  .offer .lead{color:var(--ink-soft);max-width:680px;margin-bottom:52px}
-  .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:26px;align-items:stretch}
+  .offer .lead{color:var(--ink-soft);max-width:680px;margin-bottom:56px}
+  .plans{display:grid;grid-template-columns:1fr 1.22fr 1fr;gap:26px;align-items:start}
+  @media(max-width:980px){.plans{grid-template-columns:1fr;max-width:560px;margin:0 auto}}
   .plan{
     background:var(--card);border:1px solid var(--line);border-radius:14px;
     padding:36px 32px;display:flex;flex-direction:column;
-    transition:transform .18s ease, box-shadow .18s ease;
   }
-  .plan:hover{transform:translateY(-4px);box-shadow:0 20px 50px -24px rgba(28,30,33,.3)}
-  .plan.featured{border:2px solid var(--accent)}
-  .plan .stage{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--brass);margin-bottom:10px}
+  .plan.featured{border:2px solid var(--accent);margin-top:-14px;padding-top:44px}
+  @media(max-width:980px){.plan.featured{margin-top:0}}
+  .plan.quiet{background:transparent;border-style:dashed}
+  .door{
+    font-family:'Newsreader',serif;font-style:italic;font-size:1.05rem;color:var(--brass);
+    margin-bottom:8px;
+  }
   .plan h3{font-size:1.5rem;margin-bottom:6px}
   .plan .price{font-family:'Newsreader',serif;font-size:1.9rem;margin:12px 0 4px;color:var(--ink)}
   .plan .price small{font-size:.95rem;color:var(--ink-faint);font-family:'Inter',sans-serif}
@@ -201,11 +216,15 @@
     padding:16px 20px;margin-bottom:24px;font-size:.9rem;color:var(--ink-soft);
   }
   .guarantee strong{color:var(--accent);display:block;margin-bottom:4px;font-size:.95rem}
+  .offer-note{
+    max-width:640px;margin:44px auto 0;text-align:center;
+    font-family:'Newsreader',serif;font-style:italic;color:var(--ink-soft);font-size:1.05rem;
+  }
 
   /* ---------- EOL ---------- */
   .eol{background:var(--ink);color:#e9e6df;padding:76px 0}
   .eol .wrap{max-width:900px}
-  .eol .kicker{color:#d9a441}
+  .eol .opener{font-family:'Newsreader',serif;font-style:italic;color:#d9a441;font-size:1.1rem;margin-bottom:16px}
   .eol h2{font-size:clamp(1.7rem,3.4vw,2.4rem);color:#fff;margin-bottom:20px}
   .eol p{color:#b9bec5;margin-bottom:16px;max-width:700px}
   .eol .fact{
@@ -217,37 +236,17 @@
   /* ---------- no timesheets ---------- */
   .nots h2{font-size:clamp(1.9rem,3.8vw,2.7rem);max-width:720px;margin-bottom:24px}
   .nots .lead{color:var(--ink-soft);max-width:700px;margin-bottom:48px;font-size:1.12rem}
-  .split{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:28px;max-width:960px}
   @media(max-width:760px){.split{grid-template-columns:1fr}}
-  .split .card h3{display:flex;align-items:center;gap:10px}
-  .tag-no,.tag-yes{
-    font-size:.68rem;letter-spacing:.1em;font-weight:700;text-transform:uppercase;
-    padding:4px 10px;border-radius:99px;
+  .list-card{
+    background:var(--card);border:1px solid var(--line);border-radius:12px;padding:30px;
   }
-  .tag-no{background:#f7e8e6;color:#a33d32}
-  .tag-yes{background:#e7f2ec;color:var(--accent)}
-  .split ul{list-style:none;margin-top:14px}
-  .split li{padding:8px 0;font-size:.95rem;color:var(--ink-soft);border-bottom:1px dashed var(--line)}
-  .split li:last-child{border-bottom:none}
-
-  /* ---------- case study ---------- */
-  .case{background:var(--paper-deep)}
-  .case-box{
-    background:var(--card);border:1px solid var(--line);border-radius:14px;
-    overflow:hidden;max-width:900px;margin:0 auto;
-    display:grid;grid-template-columns:280px 1fr;
-  }
-  @media(max-width:760px){.case-box{grid-template-columns:1fr}}
-  .case-img{background:url('assets/construction.jpg') center/cover;min-height:240px}
-  .case-content{padding:44px}
-  @media(max-width:760px){.case-content{padding:32px 24px}}
-  .case-box .kicker{margin-bottom:16px}
-  .case-box h2{font-size:clamp(1.5rem,3vw,2rem);margin-bottom:20px}
-  .case-box p{color:var(--ink-soft);margin-bottom:14px;font-size:.98rem}
-  .case-stats{display:flex;gap:0;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:26px;padding-top:22px}
-  .case-stats div{flex:1;min-width:130px;padding-right:20px}
-  .case-stats strong{font-family:'Newsreader',serif;font-size:1.6rem;display:block;color:var(--accent)}
-  .case-stats span{font-size:.82rem;color:var(--ink-faint)}
+  .list-card.gone{background:transparent;border-style:dashed}
+  .list-card .hand{display:block;margin-bottom:12px}
+  .list-card ul{list-style:none}
+  .list-card li{padding:8px 0;font-size:.95rem;color:var(--ink-soft);border-bottom:1px dashed var(--line)}
+  .list-card li:last-child{border-bottom:none}
+  .list-card.gone li{text-decoration:line-through;text-decoration-color:rgba(163,61,50,.55);text-decoration-thickness:1.5px}
 
   /* ---------- faq ---------- */
   .faq .wrap{max-width:820px}
@@ -267,10 +266,20 @@
   details .a p{margin-bottom:12px}
   details .a p:last-child{margin-bottom:0}
 
-  /* ---------- about ---------- */
-  .about .wrap{max-width:860px}
-  .about h2{font-size:clamp(1.8rem,3.6vw,2.5rem);margin-bottom:24px}
-  .about p{color:var(--ink-soft);margin-bottom:16px;max-width:700px}
+  /* ---------- letter ---------- */
+  .letter{background:var(--paper-deep)}
+  .letter .wrap{max-width:720px}
+  .letter-card{
+    background:var(--card);border:1px solid var(--line);border-radius:4px;
+    padding:56px 60px;box-shadow:0 20px 50px -30px rgba(28,30,33,.25);
+    transform:rotate(-.4deg);
+  }
+  @media(max-width:640px){.letter-card{padding:36px 26px;transform:none}}
+  .letter-card .date{font-size:.85rem;color:var(--ink-faint);margin-bottom:24px}
+  .letter-card h2{font-size:1.8rem;margin-bottom:22px}
+  .letter-card p{color:var(--ink-soft);margin-bottom:16px;font-size:1rem}
+  .letter-card .sig{font-family:'Caveat',cursive;font-size:2rem;color:var(--ink);margin-top:28px}
+  .letter-card .sig-sub{font-size:.85rem;color:var(--ink-faint)}
 
   /* ---------- final cta ---------- */
   .final{text-align:center;padding:100px 0}
@@ -308,8 +317,8 @@
   <div class="wrap">
     <div class="hero-grid">
       <div>
-        <div class="kicker">Websites for businesses that build real things</div>
-        <h1>Your website, <em>handled.</em></h1>
+        <p class="hero-opener">For businesses that build real things —</p>
+        <h1>Your website, <em>handled.<svg viewBox="0 0 260 20" preserveAspectRatio="none" aria-hidden="true"><path d="M4 14 C 40 6, 80 18, 120 11 S 210 6, 256 12" fill="none" stroke="#b0812f" stroke-width="4" stroke-linecap="round" opacity=".65"/></svg></em></h1>
         <p class="sub">
           I'm the web guy your business keeps wishing it had. I can rebuild your site for one flat price
           with a real deadline — <strong>or simply take over the one you already have.</strong> Either way, I stay on:
@@ -347,9 +356,11 @@
               </div>
             </div>
           </div>
-          <div class="chat-foot">That's the whole workflow.</div>
         </div>
-        <p class="chat-caption">What working with me looks like, most days.</p>
+        <div class="chat-annot">
+          <svg width="26" height="30" viewBox="0 0 26 30" aria-hidden="true"><path d="M22 2 C 14 8, 8 14, 6 24 M6 24 l-3 -7 M6 24 l8 -3" fill="none" stroke="#b0812f" stroke-width="2" stroke-linecap="round"/></svg>
+          <span class="hand">that's the whole workflow — no portal, no ticket, no invoice surprise</span>
+        </div>
       </div>
     </div>
 
@@ -363,7 +374,7 @@
 
 <section class="band band-drafting">
   <div class="wrap">
-    <div class="kicker">Who this is for</div>
+    <p class="hand">who this is for</p>
     <h2>Built for businesses that build real things.</h2>
     <p>Engineering firms, manufacturers, contractors, and the trades — companies where the website
     matters to revenue, but nobody on staff should have to babysit it.</p>
@@ -375,27 +386,36 @@
     <h2>You were never supposed to be a website editor.</h2>
     <p class="lead">
       Somebody at your company owns "the website" on top of their real job. They dread it.
-      The page editor never does what the design shows, the plugins want updating again,
-      and the agency wants a ticket filed. There is a simpler arrangement.
+      The page editor never does what the design shows, the software wants updating again,
+      and the agency wants a ticket filed. There's a simpler arrangement.
     </p>
-    <div class="cols">
-      <div class="card">
-        <span class="num">THE OLD WAY</span>
-        <h3>The website chore</h3>
+
+    <div class="phil-row">
+      <div class="phil-num">i.</div>
+      <div>
+        <h3>The website stops being a chore</h3>
         <p>Logins nobody remembers, software that constantly needs updating, "how do I make the photo
         bigger" afternoons, and a low-grade worry that the whole thing might break — or get hacked —
-        at the worst moment.</p>
+        at the worst moment. All of that lands on my desk instead of yours.</p>
       </div>
-      <div class="card">
-        <span class="num">THE NEW WAY</span>
-        <h3>A developer in your Slack</h3>
+    </div>
+
+    <div class="phil-row">
+      <div class="phil-num">ii.</div>
+      <div>
+        <h3>Changes happen the way you'd ask a coworker</h3>
         <p>You type "swap the header photo and add Tuesday hours" — and it's live the same day.
         Faster than anyone at your office could wrestle an editor into doing it, and done right,
         by the person who built the site.</p>
+        <p class="aside">The contract says acknowledged within two business hours, live the same
+        business day. In practice, small things usually ship within the hour.</p>
       </div>
-      <div class="card">
-        <span class="num">EITHER WAY</span>
-        <h3>You own everything</h3>
+    </div>
+
+    <div class="phil-row">
+      <div class="phil-num">iii.</div>
+      <div>
+        <h3>You own everything, always</h3>
         <p>Plain, documented code in a repository that belongs to you. Any developer in the world can
         pick it up tomorrow. No platform holding your site hostage, no software subscription you
         forgot you were paying.</p>
@@ -412,7 +432,7 @@
 
     <div class="plans">
       <div class="plan">
-        <div class="stage">Door 1 · "Take over my site"</div>
+        <div class="door">Door one — "take over my site"</div>
         <h3>I run what you have</h3>
         <div class="price">$2,500+<small>/month · month-to-month</small></div>
         <div class="terms">For sites that mostly work but have no owner. Priced by the shape your site is in.</div>
@@ -431,16 +451,19 @@
       </div>
 
       <div class="plan featured">
-        <div class="stage">Door 2 · "Rebuild my site"</div>
+        <div class="door">Door two — "rebuild my site"</div>
         <h3>New site, real deadline</h3>
-        <div class="price">$12,000 <small>fixed · $4,000/mo × 3</small></div>
-        <div class="terms">Re-coded from your approved design in 12 weeks. One-page scope signed before kickoff.</div>
+        <div class="price">from $7,500 <small>· one fixed number, set at scoping</small></div>
+        <div class="terms">A four-page shop site is not a four-thousand-page catalog — so the price is
+        set by size and scope in a 20-minute call, put in writing, and never changes after signing.
+        Most rebuilds run 6 to 12 weeks, billed monthly across the build.</div>
         <div class="guarantee">
           <strong>The deadline has teeth</strong>
           If your site isn't live on the date we agree to, you stop paying until it is.
           I control delivery, so I can afford to promise it.
         </div>
         <ul>
+          <li>Re-coded from your approved design — yours or a design partner's</li>
           <li>Fast, dependency-free, nothing to patch or hack</li>
           <li>All content, addresses, and search rankings carried over</li>
           <li>Hosting that costs dollars, not hundreds, per month</li>
@@ -449,30 +472,29 @@
         <a class="btn" href="#contact">Book a 20-minute call</a>
       </div>
 
-      <div class="plan">
-        <div class="stage">Door 3 · "I'm not sure yet"</div>
+      <div class="plan quiet">
+        <div class="door">Door three — "I'm not sure yet"</div>
         <h3>Website &amp; Tech Roadmap</h3>
         <div class="price">$500 <small>· delivered in one week</small></div>
         <div class="terms">A second opinion from someone with no reason to oversell you.</div>
-        <div class="guarantee">
-          <strong>Yours to keep</strong>
-          The plan is written so you can execute it with anyone — including not me.
-        </div>
         <ul>
           <li>Full audit: security, speed, what's actually at risk</li>
           <li>What a rebuild would and wouldn't involve</li>
           <li>A prioritized plan in plain English</li>
-          <li>Which door above fits you — or neither</li>
+          <li>Which door fits you — or neither; the plan is yours to execute with anyone, including not me</li>
         </ul>
         <a class="btn ghost" href="#contact">Request a Roadmap</a>
       </div>
     </div>
+
+    <p class="offer-note">Not sure which door is yours? That's normal — it's the first thing we figure
+    out on the call, and it costs you nothing to ask.</p>
   </div>
 </section>
 
 <section class="eol" id="eol">
   <div class="wrap">
-    <div class="kicker">A note for concrete5 / Concrete CMS owners</div>
+    <p class="opener">A note for concrete5 / Concrete CMS owners —</p>
     <h2>Still on concrete5? Your site stopped getting security updates in 2024.</h2>
     <p>
       That's not my claim — it's the software vendor's own announcement. Every concrete5 site on
@@ -498,8 +520,8 @@
       better: you see the work itself, continuously.
     </p>
     <div class="split">
-      <div class="card">
-        <h3>What disappears <span class="tag-no">Gone</span></h3>
+      <div class="list-card gone">
+        <span class="hand">gone —</span>
         <ul>
           <li>Hourly rates and hour reports</li>
           <li>"Is he working right now?" anxiety — for both of us</li>
@@ -508,8 +530,8 @@
           <li>Explaining your site to a new agency every two years</li>
         </ul>
       </div>
-      <div class="card">
-        <h3>What replaces it <span class="tag-yes">Included</span></h3>
+      <div class="list-card">
+        <span class="hand">what you get instead —</span>
         <ul>
           <li>A fixed monthly number that never surprises you</li>
           <li>A weekly 3-minute video: what shipped, what's next</li>
@@ -517,32 +539,6 @@
           <li>Outcomes agreed in writing at the start of each month</li>
           <li>One person who has known your site for years</li>
         </ul>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="case" id="case">
-  <div class="wrap">
-    <div class="case-box">
-      <div class="case-img"></div>
-      <div class="case-content">
-        <div class="kicker">Case Study</div>
-        <h2>A North Dakota engineering firm, off the treadmill in 12 weeks.</h2>
-        <p>
-          An engineering company came to me with a finished redesign from their design partner and a
-          website stuck on aging software. Instead of quoting hours, we agreed on one number and one
-          date: the new site, re-coded from their approved design, live in 12 weeks, for a flat rate.
-        </p>
-        <p>
-          No hour reports were ever produced. They message; things ship. That engagement is the model
-          every client on this page gets.
-        </p>
-        <div class="case-stats">
-          <div><strong>12 weeks</strong><span>agreed timeline, fixed scope</span></div>
-          <div><strong>0</strong><span>hour reports produced</span></div>
-          <div><strong>1</strong><span>number on every invoice</span></div>
-        </div>
       </div>
     </div>
   </div>
@@ -602,11 +598,11 @@
     </details>
 
     <details>
-      <summary>What does the 12-week rebuild not include?</summary>
+      <summary>What does a rebuild not include?</summary>
       <div class="a">
         <p>The scope is a one-page document we both sign before kickoff: which pages, which integrations,
         what gets migrated. Anything outside it goes on the next month's outcome list instead of silently
-        inflating the project. That discipline is why I can put a real date on delivery.</p>
+        inflating the project. That discipline is why I can put a real price and a real date on delivery.</p>
       </div>
     </details>
   </div>
@@ -614,25 +610,36 @@
 
 <section class="band band-clocks">
   <div class="wrap">
-    <div class="kicker">The part nobody else will put in writing</div>
+    <p class="hand">the part nobody else will put in writing</p>
     <h2>The deadline has teeth.</h2>
     <p>If your rebuild isn't live on the date we agreed to, you stop paying until it is.
     Ask the last agency you worked with if they'll sign that sentence.</p>
   </div>
 </section>
 
-<section class="about" id="about">
+<section class="letter" id="about">
   <div class="wrap">
-    <h2>Who you'd be working with</h2>
-    <p>
-      I'm Alexander Schottky, a full-stack web developer based in Missouri with over fifteen years of
-      experience building and running websites and web applications for businesses. My clients tend to
-      stay: my current retainer relationships run four to six years and counting.
-    </p>
-    <p>
-      I work with a small number of companies at a time — deliberately. This is not an agency with
-      account managers between you and the person doing the work. When you message, the developer answers.
-    </p>
+    <div class="letter-card">
+      <div class="date">From my desk in Missouri</div>
+      <h2>Why I work this way</h2>
+      <p>
+        I've been building websites and web applications for over fifteen years. For most of those
+        years I billed like everyone else: hourly, with reports. And I watched the same thing happen
+        on every project — the moment hours enter the conversation, trust leaves it. The client starts
+        wondering what they're paying for. The developer starts performing busyness. Everybody loses.
+      </p>
+      <p>
+        So I stopped. Now I sell two things: a finished site by a date we both signed, and the promise
+        that when you need something changed, it's done the same day. My clients tend to stay for years —
+        I think that's why.
+      </p>
+      <p>
+        I keep my client list short on purpose. There's no account manager between you and me, no
+        junior developer doing the work while I take the calls. When you message, I answer.
+      </p>
+      <div class="sig">Alexander</div>
+      <div class="sig-sub">Alexander Schottky · full-stack developer · Missouri, USA</div>
+    </div>
   </div>
 </section>
 
