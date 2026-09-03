@@ -3,18 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Alexander Schottky — Fractional Web CTO. Your developer is your CMS.</title>
-<meta name="description" content="Fixed-price website rebuilds in 12 weeks, then a senior developer on call in Slack. No CMS to maintain, no hour reports, no agency ticket queue. Changes live the same day.">
+<title>Alexander Schottky — Your Website, Handled</title>
+<meta name="description" content="I'm the web guy your business keeps wishing it had. Rebuild for a flat price with a real deadline — or I take over the site you already have. Changes live the same day. No agency, no ticket queue, no hour reports.">
+<meta name="robots" content="noindex">
 
-<!-- OpenGraph / share meta — og-image.png to be generated before deploy (1200x630) -->
+<!-- OpenGraph / share meta — og-image.png to be generated before launch (1200x630); noindex until domain is final -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://DOMAIN-TBD.com/">
-<meta property="og:title" content="Alexander Schottky — Fractional Web CTO">
-<meta property="og:description" content="Fixed-price website rebuilds in 12 weeks, then a senior developer on call in Slack. No CMS, no hour reports. Changes live the same day.">
+<meta property="og:title" content="Alexander Schottky — Your Website, Handled">
+<meta property="og:description" content="The web guy your business keeps wishing it had. Flat price, real deadline, changes live the same day. No agency, no ticket queue, no hour reports.">
 <meta property="og:image" content="https://DOMAIN-TBD.com/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Alexander Schottky — Fractional Web CTO">
-<meta name="twitter:description" content="Fixed-price website rebuilds in 12 weeks, then a senior developer on call in Slack. No CMS, no hour reports.">
+<meta name="twitter:title" content="Alexander Schottky — Your Website, Handled">
+<meta name="twitter:description" content="The web guy your business keeps wishing it had. Flat price, real deadline, changes live the same day.">
 <meta name="twitter:image" content="https://DOMAIN-TBD.com/og-image.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,7 +34,7 @@
     --brass:#b0812f;
     --line:#e2dcd0;
     --card:#ffffff;
-    --max:1080px;
+    --max:1120px;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   html{scroll-behavior:smooth}
@@ -48,6 +49,7 @@
   h1,h2,h3,.serif{font-family:'Newsreader',Georgia,serif;font-weight:500;line-height:1.15;letter-spacing:-0.01em}
   a{color:var(--accent);text-decoration:none}
   a:hover{text-decoration:underline}
+  img{max-width:100%;display:block}
   .wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
   section{padding:88px 0}
 
@@ -68,28 +70,62 @@
   .btn{
     display:inline-block;background:var(--accent);color:#fff;
     padding:12px 26px;border-radius:6px;font-weight:600;font-size:.95rem;
-    transition:background .15s ease;
+    transition:background .15s ease,transform .15s ease;
   }
-  .btn:hover{background:var(--accent-bright);text-decoration:none}
+  .btn:hover{background:var(--accent-bright);text-decoration:none;transform:translateY(-1px)}
   .btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
   .btn.ghost:hover{background:var(--accent);color:#fff}
   .btn.big{padding:16px 34px;font-size:1.02rem}
 
   /* ---------- hero ---------- */
-  .hero{padding:110px 0 90px;text-align:left}
+  .hero{padding:96px 0 72px}
+  .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:64px;align-items:center}
+  @media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:48px}}
   .kicker{
     font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;
     color:var(--brass);font-weight:700;margin-bottom:22px;
   }
-  .hero h1{font-size:clamp(2.4rem,5.6vw,4rem);max-width:820px;margin-bottom:26px}
+  .hero h1{font-size:clamp(2.6rem,5.8vw,4.2rem);margin-bottom:26px}
   .hero h1 em{font-style:italic;color:var(--accent)}
-  .hero .sub{font-size:1.22rem;color:var(--ink-soft);max-width:660px;margin-bottom:38px}
+  .hero .sub{font-size:1.16rem;color:var(--ink-soft);max-width:560px;margin-bottom:36px}
+  .hero .sub strong{color:var(--ink)}
   .hero-ctas{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
   .hero-note{font-size:.88rem;color:var(--ink-faint);margin-top:18px}
 
+  /* ---------- slack mock ---------- */
+  .chat{
+    background:#fff;border:1px solid var(--line);border-radius:14px;
+    box-shadow:0 24px 60px -24px rgba(28,30,33,.28);
+    overflow:hidden;transform:rotate(1.2deg);
+  }
+  @media(max-width:900px){.chat{transform:none;max-width:480px}}
+  .chat-head{
+    background:var(--ink);color:#e9e6df;padding:14px 20px;
+    font-size:.85rem;font-weight:600;display:flex;align-items:center;gap:10px;
+  }
+  .chat-head .dot{width:9px;height:9px;border-radius:50%;background:#3ecf8e;flex-shrink:0}
+  .chat-body{padding:20px 20px 8px}
+  .msg{display:flex;gap:12px;margin-bottom:18px}
+  .avatar{
+    width:36px;height:36px;border-radius:8px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:.8rem;font-weight:700;color:#fff;
+  }
+  .avatar.client{background:#8a6d3b}
+  .avatar.dev{background:var(--accent)}
+  .msg .who{font-size:.82rem;font-weight:700;margin-bottom:2px}
+  .msg .who span{font-weight:400;color:var(--ink-faint);font-size:.76rem;margin-left:6px}
+  .msg p{font-size:.92rem;color:var(--ink-soft);line-height:1.5}
+  .chat-foot{
+    border-top:1px solid var(--line);padding:12px 20px;font-size:.8rem;color:var(--ink-faint);
+    font-style:italic;
+  }
+  .chat-caption{font-size:.85rem;color:var(--ink-faint);text-align:center;margin-top:16px}
+
+  /* ---------- proof bar ---------- */
   .proof-bar{
     display:flex;gap:0;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;
-    margin-top:64px;background:var(--card);overflow:hidden;
+    margin-top:70px;background:var(--card);overflow:hidden;
   }
   .proof-bar div{
     flex:1;min-width:200px;padding:20px 26px;border-right:1px solid var(--line);
@@ -98,18 +134,21 @@
   .proof-bar div:last-child{border-right:none}
   .proof-bar strong{display:block;color:var(--ink);font-size:1.05rem;margin-bottom:2px}
 
-  /* ---------- EOL alert ---------- */
-  .eol{background:var(--ink);color:#e9e6df;padding:72px 0}
-  .eol .wrap{max-width:880px}
-  .eol .kicker{color:#d9a441}
-  .eol h2{font-size:clamp(1.7rem,3.4vw,2.4rem);color:#fff;margin-bottom:20px}
-  .eol p{color:#b9bec5;margin-bottom:16px;max-width:680px}
-  .eol .fact{
-    border-left:3px solid #d9a441;padding:14px 22px;margin:26px 0;
-    background:rgba(255,255,255,.05);border-radius:0 8px 8px 0;
+  /* ---------- photo bands ---------- */
+  .band{
+    position:relative;min-height:420px;display:flex;align-items:flex-end;
+    background-size:cover;background-position:center;padding:0;
   }
-  .eol .fact p{margin:0;color:#e9e6df;font-size:1.02rem}
-  .eol a{color:#d9a441}
+  .band::before{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(to top, rgba(18,32,26,.88) 0%, rgba(18,32,26,.35) 55%, rgba(18,32,26,.15) 100%);
+  }
+  .band .wrap{position:relative;padding-top:80px;padding-bottom:56px}
+  .band .kicker{color:#d9a441}
+  .band h2{color:#fff;font-size:clamp(1.8rem,3.8vw,2.6rem);max-width:640px;margin-bottom:14px}
+  .band p{color:rgba(255,255,255,.85);max-width:560px;font-size:1.05rem}
+  .band-drafting{background-image:url('assets/drafting.jpg')}
+  .band-clocks{background-image:url('assets/clocks.jpg');background-position:center 30%}
 
   /* ---------- philosophy ---------- */
   .phil h2{font-size:clamp(1.9rem,3.8vw,2.7rem);max-width:760px;margin-bottom:26px}
@@ -117,8 +156,9 @@
   .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:28px}
   .card{
     background:var(--card);border:1px solid var(--line);border-radius:12px;
-    padding:32px 30px;
+    padding:32px 30px;transition:transform .18s ease, box-shadow .18s ease;
   }
+  .card:hover{transform:translateY(-3px);box-shadow:0 16px 40px -20px rgba(28,30,33,.25)}
   .card h3{font-size:1.3rem;margin-bottom:12px}
   .card p{font-size:.97rem;color:var(--ink-soft)}
   .card .num{
@@ -126,39 +166,53 @@
     letter-spacing:.1em;font-weight:600;display:block;margin-bottom:14px;
   }
 
-  /* ---------- offer ---------- */
+  /* ---------- offer: three doors ---------- */
   .offer{background:var(--paper-deep)}
   .offer h2{font-size:clamp(1.9rem,3.8vw,2.7rem);margin-bottom:14px}
   .offer .lead{color:var(--ink-soft);max-width:680px;margin-bottom:52px}
-  .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:28px;align-items:stretch}
+  .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:26px;align-items:stretch}
   .plan{
     background:var(--card);border:1px solid var(--line);border-radius:14px;
-    padding:40px 36px;display:flex;flex-direction:column;
+    padding:36px 32px;display:flex;flex-direction:column;
+    transition:transform .18s ease, box-shadow .18s ease;
   }
-  .plan.featured{border:2px solid var(--accent);position:relative}
-  .plan .stage{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--brass);margin-bottom:10px}
-  .plan h3{font-size:1.65rem;margin-bottom:6px}
-  .plan .price{font-family:'Newsreader',serif;font-size:2.1rem;margin:14px 0 4px;color:var(--ink)}
-  .plan .price small{font-size:1rem;color:var(--ink-faint);font-family:'Inter',sans-serif}
-  .plan .terms{font-size:.88rem;color:var(--ink-faint);margin-bottom:22px}
-  .plan ul{list-style:none;margin:0 0 30px;flex:1}
+  .plan:hover{transform:translateY(-4px);box-shadow:0 20px 50px -24px rgba(28,30,33,.3)}
+  .plan.featured{border:2px solid var(--accent)}
+  .plan .stage{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--brass);margin-bottom:10px}
+  .plan h3{font-size:1.5rem;margin-bottom:6px}
+  .plan .price{font-family:'Newsreader',serif;font-size:1.9rem;margin:12px 0 4px;color:var(--ink)}
+  .plan .price small{font-size:.95rem;color:var(--ink-faint);font-family:'Inter',sans-serif}
+  .plan .terms{font-size:.86rem;color:var(--ink-faint);margin-bottom:20px}
+  .plan ul{list-style:none;margin:0 0 26px;flex:1}
   .plan li{
-    padding:9px 0 9px 30px;position:relative;font-size:.95rem;color:var(--ink-soft);
+    padding:8px 0 8px 30px;position:relative;font-size:.93rem;color:var(--ink-soft);
     border-bottom:1px dashed var(--line);
   }
   .plan li:last-child{border-bottom:none}
   .plan li::before{
-    content:"";position:absolute;left:2px;top:16px;width:14px;height:14px;
-    background:var(--accent);border-radius:50%;
+    content:"";position:absolute;left:2px;top:15px;width:14px;height:14px;
+    background:var(--accent);
     -webkit-mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="black" d="M6.5 12.5L2 8l1.5-1.5L6.5 9.5 12.5 3.5 14 5z"/></svg>') center/contain no-repeat;
     mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="black" d="M6.5 12.5L2 8l1.5-1.5L6.5 9.5 12.5 3.5 14 5z"/></svg>') center/contain no-repeat;
   }
   .plan li strong{color:var(--ink)}
   .guarantee{
     background:#f4f9f6;border:1px solid #cfe3d8;border-radius:10px;
-    padding:18px 22px;margin-bottom:28px;font-size:.93rem;color:var(--ink-soft);
+    padding:16px 20px;margin-bottom:24px;font-size:.9rem;color:var(--ink-soft);
   }
-  .guarantee strong{color:var(--accent);display:block;margin-bottom:4px;font-size:.98rem}
+  .guarantee strong{color:var(--accent);display:block;margin-bottom:4px;font-size:.95rem}
+
+  /* ---------- EOL ---------- */
+  .eol{background:var(--ink);color:#e9e6df;padding:76px 0}
+  .eol .wrap{max-width:900px}
+  .eol .kicker{color:#d9a441}
+  .eol h2{font-size:clamp(1.7rem,3.4vw,2.4rem);color:#fff;margin-bottom:20px}
+  .eol p{color:#b9bec5;margin-bottom:16px;max-width:700px}
+  .eol .fact{
+    border-left:3px solid #d9a441;padding:14px 22px;margin:26px 0;
+    background:rgba(255,255,255,.05);border-radius:0 8px 8px 0;
+  }
+  .eol .fact p{margin:0;color:#e9e6df;font-size:1.02rem}
 
   /* ---------- no timesheets ---------- */
   .nots h2{font-size:clamp(1.9rem,3.8vw,2.7rem);max-width:720px;margin-bottom:24px}
@@ -180,15 +234,20 @@
   .case{background:var(--paper-deep)}
   .case-box{
     background:var(--card);border:1px solid var(--line);border-radius:14px;
-    padding:48px;max-width:860px;margin:0 auto;
+    overflow:hidden;max-width:900px;margin:0 auto;
+    display:grid;grid-template-columns:280px 1fr;
   }
+  @media(max-width:760px){.case-box{grid-template-columns:1fr}}
+  .case-img{background:url('assets/construction.jpg') center/cover;min-height:240px}
+  .case-content{padding:44px}
+  @media(max-width:760px){.case-content{padding:32px 24px}}
   .case-box .kicker{margin-bottom:16px}
-  .case-box h2{font-size:clamp(1.6rem,3.2vw,2.2rem);margin-bottom:22px}
-  .case-box p{color:var(--ink-soft);margin-bottom:16px}
-  .case-stats{display:flex;gap:0;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:30px;padding-top:26px}
-  .case-stats div{flex:1;min-width:150px;padding-right:24px}
-  .case-stats strong{font-family:'Newsreader',serif;font-size:1.7rem;display:block;color:var(--accent)}
-  .case-stats span{font-size:.85rem;color:var(--ink-faint)}
+  .case-box h2{font-size:clamp(1.5rem,3vw,2rem);margin-bottom:20px}
+  .case-box p{color:var(--ink-soft);margin-bottom:14px;font-size:.98rem}
+  .case-stats{display:flex;gap:0;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:26px;padding-top:22px}
+  .case-stats div{flex:1;min-width:130px;padding-right:20px}
+  .case-stats strong{font-family:'Newsreader',serif;font-size:1.6rem;display:block;color:var(--accent)}
+  .case-stats span{font-size:.82rem;color:var(--ink-faint)}
 
   /* ---------- faq ---------- */
   .faq .wrap{max-width:820px}
@@ -208,14 +267,6 @@
   details .a p{margin-bottom:12px}
   details .a p:last-child{margin-bottom:0}
 
-  /* ---------- roadmap entry ---------- */
-  .roadmap{background:var(--ink);color:#e9e6df}
-  .roadmap .wrap{max-width:860px;text-align:center}
-  .roadmap .kicker{color:#d9a441}
-  .roadmap h2{color:#fff;font-size:clamp(1.8rem,3.6vw,2.5rem);margin-bottom:18px}
-  .roadmap p{color:#b9bec5;max-width:620px;margin:0 auto 32px}
-  .roadmap .price-line{font-family:'Newsreader',serif;font-size:1.4rem;color:#d9a441;margin-bottom:30px}
-
   /* ---------- about ---------- */
   .about .wrap{max-width:860px}
   .about h2{font-size:clamp(1.8rem,3.6vw,2.5rem);margin-bottom:24px}
@@ -234,8 +285,8 @@
   @media(max-width:700px){
     .nav-links a:not(.btn){display:none}
     section{padding:64px 0}
-    .hero{padding:72px 0 60px}
-    .case-box{padding:32px 24px}
+    .hero{padding:64px 0 56px}
+    .band{min-height:340px}
   }
 </style>
 </head>
@@ -255,17 +306,52 @@
 
 <section class="hero">
   <div class="wrap">
-    <div class="kicker">Fractional Web CTO · Fixed-Price Engagements</div>
-    <h1>Your developer <em>is</em> your CMS.</h1>
-    <p class="sub">
-      I re-code your website as fast, unhackable, plain code — fixed price, delivered in 12 weeks.
-      After that, you don't log into anything. You message me in Slack, and the change is live the same day.
-    </p>
-    <div class="hero-ctas">
-      <a class="btn big" href="#contact">Book a 20-minute call</a>
-      <a class="btn ghost big" href="#offer">See the offer</a>
+    <div class="hero-grid">
+      <div>
+        <div class="kicker">Websites for businesses that build real things</div>
+        <h1>Your website, <em>handled.</em></h1>
+        <p class="sub">
+          I'm the web guy your business keeps wishing it had. I can rebuild your site for one flat price
+          with a real deadline — <strong>or simply take over the one you already have.</strong> Either way, I stay on:
+          need a change, message me like a coworker and it's live the same day.
+        </p>
+        <div class="hero-ctas">
+          <a class="btn big" href="#contact">Book a 20-minute call</a>
+          <a class="btn ghost big" href="#offer">See how it works</a>
+        </div>
+        <p class="hero-note">No agency. No ticket queue. No hour reports. You own every line of code.</p>
+      </div>
+      <div>
+        <div class="chat">
+          <div class="chat-head"><span class="dot"></span> #website — you &amp; Alexander</div>
+          <div class="chat-body">
+            <div class="msg">
+              <div class="avatar client">JM</div>
+              <div>
+                <div class="who">Office Manager <span>9:14 AM</span></div>
+                <p>Hey — can you swap the header photo and add our new Tuesday hours?</p>
+              </div>
+            </div>
+            <div class="msg">
+              <div class="avatar dev">AS</div>
+              <div>
+                <div class="who">Alexander <span>9:21 AM</span></div>
+                <p>On it.</p>
+              </div>
+            </div>
+            <div class="msg">
+              <div class="avatar dev">AS</div>
+              <div>
+                <div class="who">Alexander <span>9:52 AM</span></div>
+                <p>Done — both changes are live. Take a look.</p>
+              </div>
+            </div>
+          </div>
+          <div class="chat-foot">That's the whole workflow.</div>
+        </div>
+        <p class="chat-caption">What working with me looks like, most days.</p>
+      </div>
     </div>
-    <p class="hero-note">No hour reports. No ticket queue. No CMS to maintain. You own every line of code.</p>
 
     <div class="proof-bar">
       <div><strong>15+ years</strong> building for the web, full stack</div>
@@ -275,53 +361,44 @@
   </div>
 </section>
 
-<section class="eol" id="eol">
+<section class="band band-drafting">
   <div class="wrap">
-    <div class="kicker">If your site runs on concrete5 / Concrete CMS v8 or older</div>
-    <h2>Your CMS stopped receiving security patches on December 31, 2024.</h2>
-    <p>
-      That is not my claim — it is the vendor's own announcement. Every concrete5 site on version 8 or older
-      has been running without security updates since then, on PHP versions that are themselves out of support.
-    </p>
-    <div class="fact">
-      <p>"Version 8 support has officially ended." — Concrete CMS, official project announcement</p>
-    </div>
-    <p>
-      You have two options: pay for a migration to Concrete v9 and board the same upgrade treadmill again —
-      or leave the CMS behind entirely. I specialize in Concrete CMS, which means I can read every corner of
-      your existing site and carry all of it — content, URLs, search rankings — into plain, dependency-free code
-      that has nothing to patch and nothing to hack.
-    </p>
+    <div class="kicker">Who this is for</div>
+    <h2>Built for businesses that build real things.</h2>
+    <p>Engineering firms, manufacturers, contractors, and the trades — companies where the website
+    matters to revenue, but nobody on staff should have to babysit it.</p>
   </div>
 </section>
 
 <section class="phil" id="why">
   <div class="wrap">
-    <h2>The CMS was always a workaround for not having a developer.</h2>
+    <h2>You were never supposed to be a website editor.</h2>
     <p class="lead">
-      Nobody ever wanted a CMS. What businesses wanted was changes made quickly without agency invoices.
-      The CMS was the compromise — and it came with a price you have been paying ever since.
+      Somebody at your company owns "the website" on top of their real job. They dread it.
+      The page editor never does what the design shows, the plugins want updating again,
+      and the agency wants a ticket filed. There is a simpler arrangement.
     </p>
     <div class="cols">
       <div class="card">
-        <span class="num">WHAT THE CMS COSTS YOU</span>
-        <h3>The treadmill</h3>
-        <p>Plugin updates, security patches, version migrations, hosting that breaks after upgrades, staff
-        wrestling a page editor that never quite does what the design shows. It is a part-time job nobody at
-        your company applied for.</p>
+        <span class="num">THE OLD WAY</span>
+        <h3>The website chore</h3>
+        <p>Logins nobody remembers, software that constantly needs updating, "how do I make the photo
+        bigger" afternoons, and a low-grade worry that the whole thing might break — or get hacked —
+        at the worst moment.</p>
       </div>
       <div class="card">
-        <span class="num">WHAT REPLACES IT</span>
-        <h3>A senior developer in your Slack</h3>
-        <p>You type "swap the header photo and add Tuesday hours" — and it is live the same day. Faster than
-        anyone at your office could fight the CMS editor into doing it, and it is done right, by the person
-        who built the site.</p>
+        <span class="num">THE NEW WAY</span>
+        <h3>A developer in your Slack</h3>
+        <p>You type "swap the header photo and add Tuesday hours" — and it's live the same day.
+        Faster than anyone at your office could wrestle an editor into doing it, and done right,
+        by the person who built the site.</p>
       </div>
       <div class="card">
-        <span class="num">WHAT YOU KEEP</span>
-        <h3>A codebase you own</h3>
-        <p>Plain, documented code in a git repository that belongs to you. Any developer in the world can work
-        on it tomorrow. Compare that to a legacy CMS, where you are locked to a shrinking pool of specialists.</p>
+        <span class="num">EITHER WAY</span>
+        <h3>You own everything</h3>
+        <p>Plain, documented code in a repository that belongs to you. Any developer in the world can
+        pick it up tomorrow. No platform holding your site hostage, no software subscription you
+        forgot you were paying.</p>
       </div>
     </div>
   </div>
@@ -329,59 +406,96 @@
 
 <section class="offer" id="offer">
   <div class="wrap">
-    <h2>Two stages. One decision.</h2>
-    <p class="lead">Every engagement starts with a fixed-price rebuild. When it ships, you decide whether you
-    want me to stay on as your web department. Most clients do — but nothing obligates you.</p>
+    <h2>Three doors in. Same web guy behind all of them.</h2>
+    <p class="lead">Whether your site needs a ground-up rebuild, just needs an owner, or you honestly
+    don't know yet — there's a straightforward way to start.</p>
 
     <div class="plans">
       <div class="plan">
-        <div class="stage">Stage 1 · The Rebuild Sprint</div>
-        <h3>Your site, re-coded in 12 weeks</h3>
-        <div class="price">$12,000 <small>fixed · billed $4,000/mo × 3</small></div>
-        <div class="terms">One-page scope signed before kickoff. No hourly rate exists anywhere in this engagement.</div>
+        <div class="stage">Door 1 · "Take over my site"</div>
+        <h3>I run what you have</h3>
+        <div class="price">$2,500+<small>/month · month-to-month</small></div>
+        <div class="terms">For sites that mostly work but have no owner. Priced by the shape your site is in.</div>
         <div class="guarantee">
-          <strong>The deadline has teeth</strong>
-          If your site is not live on the date we agree to, you stop paying until it is. I control delivery,
-          so I can afford to promise it.
+          <strong>Month one: stabilization</strong>
+          I put your site under version control, document it, and make it safely deployable.
+          Then the same-day change service kicks in.
         </div>
         <ul>
-          <li>Re-coded from your approved design — yours or a design partner's</li>
-          <li>All content, URLs, and search rankings migrated</li>
-          <li>Fast, dependency-free, nothing to patch or hack</li>
-          <li>Hosting that costs dollars, not hundreds, per month</li>
-          <li>Full ownership: your repository, your code, documented</li>
+          <li>Your existing site, whatever it runs on</li>
+          <li>Direct line in Slack — changes live same day</li>
+          <li>Security updates and backups handled</li>
+          <li>Honest advice when a rebuild would cost you less</li>
         </ul>
-        <a class="btn ghost" href="#contact">Start with a call</a>
+        <a class="btn ghost" href="#contact">Hand it over</a>
       </div>
 
       <div class="plan featured">
-        <div class="stage">Stage 2 · Fractional CTO</div>
-        <h3>Your web department, on retainer</h3>
-        <div class="price">$2,500–4,000<small>/month · month-to-month</small></div>
-        <div class="terms">Scoped by outcomes, not hours. Cancel any month. No timesheets are produced — ever.</div>
+        <div class="stage">Door 2 · "Rebuild my site"</div>
+        <h3>New site, real deadline</h3>
+        <div class="price">$12,000 <small>fixed · $4,000/mo × 3</small></div>
+        <div class="terms">Re-coded from your approved design in 12 weeks. One-page scope signed before kickoff.</div>
         <div class="guarantee">
-          <strong>Same-day changes, guaranteed response</strong>
-          Messages acknowledged within 2 business hours. Most content changes are live the same day.
+          <strong>The deadline has teeth</strong>
+          If your site isn't live on the date we agree to, you stop paying until it is.
+          I control delivery, so I can afford to promise it.
         </div>
         <ul>
-          <li><strong>Direct line in Slack</strong> — a senior partner, not a ticket queue</li>
-          <li><strong>Monthly outcome list</strong> — three bullets we agree on; the month closes when they ship</li>
-          <li><strong>Weekly 3-minute video update</strong> — you always know what moved</li>
-          <li><strong>Live status page</strong> — current work, shipped work, last deploy, at any hour</li>
-          <li>Strategy included: I sit on your side of the table for every technology decision</li>
+          <li>Fast, dependency-free, nothing to patch or hack</li>
+          <li>All content, addresses, and search rankings carried over</li>
+          <li>Hosting that costs dollars, not hundreds, per month</li>
+          <li>Then the same-day change service, from $2,500/mo</li>
         </ul>
         <a class="btn" href="#contact">Book a 20-minute call</a>
+      </div>
+
+      <div class="plan">
+        <div class="stage">Door 3 · "I'm not sure yet"</div>
+        <h3>Website &amp; Tech Roadmap</h3>
+        <div class="price">$500 <small>· delivered in one week</small></div>
+        <div class="terms">A second opinion from someone with no reason to oversell you.</div>
+        <div class="guarantee">
+          <strong>Yours to keep</strong>
+          The plan is written so you can execute it with anyone — including not me.
+        </div>
+        <ul>
+          <li>Full audit: security, speed, what's actually at risk</li>
+          <li>What a rebuild would and wouldn't involve</li>
+          <li>A prioritized plan in plain English</li>
+          <li>Which door above fits you — or neither</li>
+        </ul>
+        <a class="btn ghost" href="#contact">Request a Roadmap</a>
       </div>
     </div>
   </div>
 </section>
 
+<section class="eol" id="eol">
+  <div class="wrap">
+    <div class="kicker">A note for concrete5 / Concrete CMS owners</div>
+    <h2>Still on concrete5? Your site stopped getting security updates in 2024.</h2>
+    <p>
+      That's not my claim — it's the software vendor's own announcement. Every concrete5 site on
+      version 8 or older has been running without security patches since December 31, 2024.
+    </p>
+    <div class="fact">
+      <p>"Version 8 support has officially ended." — Concrete CMS, official project announcement</p>
+    </div>
+    <p>
+      Concrete CMS is my deepest specialty. That means I can read every corner of your existing site
+      and carry all of it — content, addresses, search rankings — into plain, dependency-free code with
+      nothing left to patch and nothing left to hack. If you're on concrete5, mention it when you write:
+      you're the exact client I built this service for.
+    </p>
+  </div>
+</section>
+
 <section class="nots" id="no-timesheets">
   <div class="wrap">
-    <h2>No hour reports. Here is what you get instead.</h2>
+    <h2>No hour reports. Here's what you get instead.</h2>
     <p class="lead">
-      Clients ask for timesheets when they cannot see motion. So I replaced the timesheet with something better:
-      you see the work itself, continuously.
+      Clients ask for timesheets when they can't see motion. So I replaced the timesheet with something
+      better: you see the work itself, continuously.
     </p>
     <div class="split">
       <div class="card">
@@ -390,7 +504,7 @@
           <li>Hourly rates and hour reports</li>
           <li>"Is he working right now?" anxiety — for both of us</li>
           <li>Surprise invoices and change-order haggling</li>
-          <li>CMS logins, plugin updates, security patches</li>
+          <li>Software logins, plugin updates, security patches</li>
           <li>Explaining your site to a new agency every two years</li>
         </ul>
       </div>
@@ -398,10 +512,10 @@
         <h3>What replaces it <span class="tag-yes">Included</span></h3>
         <ul>
           <li>A fixed monthly number that never surprises you</li>
-          <li>A weekly 3-minute video: what shipped, what is next</li>
+          <li>A weekly 3-minute video: what shipped, what's next</li>
           <li>A live status page you can open at 11pm before the board meeting</li>
           <li>Outcomes agreed in writing at the start of each month</li>
-          <li>One person who has known your stack for years</li>
+          <li>One person who has known your site for years</li>
         </ul>
       </div>
     </div>
@@ -411,21 +525,24 @@
 <section class="case" id="case">
   <div class="wrap">
     <div class="case-box">
-      <div class="kicker">Case Study</div>
-      <h2>A North Dakota engineering firm, off the treadmill in 12 weeks.</h2>
-      <p>
-        An engineering company came to me with a finished redesign from their design partner and a website
-        stuck on a legacy CMS. Instead of quoting hours, we agreed on one number and one date:
-        the new site, re-coded from their approved design, live in 12 weeks, for a flat weekly rate.
-      </p>
-      <p>
-        No hour reports were ever produced. They message; things ship. That engagement is the model
-        every client on this page gets.
-      </p>
-      <div class="case-stats">
-        <div><strong>12 weeks</strong><span>agreed timeline, fixed scope</span></div>
-        <div><strong>0</strong><span>hour reports produced</span></div>
-        <div><strong>1</strong><span>number on every invoice</span></div>
+      <div class="case-img"></div>
+      <div class="case-content">
+        <div class="kicker">Case Study</div>
+        <h2>A North Dakota engineering firm, off the treadmill in 12 weeks.</h2>
+        <p>
+          An engineering company came to me with a finished redesign from their design partner and a
+          website stuck on aging software. Instead of quoting hours, we agreed on one number and one
+          date: the new site, re-coded from their approved design, live in 12 weeks, for a flat rate.
+        </p>
+        <p>
+          No hour reports were ever produced. They message; things ship. That engagement is the model
+          every client on this page gets.
+        </p>
+        <div class="case-stats">
+          <div><strong>12 weeks</strong><span>agreed timeline, fixed scope</span></div>
+          <div><strong>0</strong><span>hour reports produced</span></div>
+          <div><strong>1</strong><span>number on every invoice</span></div>
+        </div>
       </div>
     </div>
   </div>
@@ -438,72 +555,69 @@
     <details>
       <summary>What if we want to edit content ourselves?</summary>
       <div class="a">
-        <p>In all my years of retainer work, clients have asked me to make the change every single time — that is
-        why they keep me around. Messaging your developer is faster than fighting a page editor.</p>
-        <p>But if you have genuinely high-frequency content — a jobs board, a news feed, an events calendar —
-        I build that one section as a simple structured editor made for exactly your content. The other 95% of
-        the site stays bulletproof.</p>
+        <p>In all my years of retainer work, clients have asked me to make the change every single time —
+        that's why they keep me around. Messaging your web guy is faster than fighting a page editor.</p>
+        <p>But if you have genuinely high-frequency content — a jobs board, a news feed, an events
+        calendar — I build that one section as a simple editor made for exactly your content. The rest
+        of the site stays bulletproof.</p>
       </div>
     </details>
 
     <details>
       <summary>What happens if something happens to you?</summary>
       <div class="a">
-        <p>Everything lives in a plain git repository with documentation, and you own it. Any competent developer
-        can take over tomorrow morning. That is a stronger continuity story than your current CMS, where you are
-        tied to a shrinking pool of specialists — I know, because I am one of them.</p>
+        <p>Everything lives in a plain, documented repository that you own. Any competent developer can
+        take over tomorrow morning. That's a stronger continuity story than most business websites have
+        today, where the site is trapped inside software a shrinking number of people understand.</p>
       </div>
     </details>
 
     <details>
       <summary>Why is there no hourly rate?</summary>
       <div class="a">
-        <p>Because hours measure my time, not your outcome. You are buying "the site ships on this date" and
-        "changes go live the same day" — so that is what the contract says, and that is what the invoice reads.
-        If I get faster at my job, you should not have to renegotiate; you should just get faster service.</p>
+        <p>Because hours measure my time, not your outcome. You're buying "the site ships on this date"
+        and "changes go live the same day" — so that's what the contract says, and that's what the
+        invoice reads. If I get faster at my job, you shouldn't have to renegotiate; you should just
+        get faster service.</p>
       </div>
     </details>
 
     <details>
       <summary>How fast do changes really go live?</summary>
       <div class="a">
-        <p>The contract guarantees acknowledgment within 2 business hours and most content changes live the same
-        business day. In practice, small changes often ship within the hour. I promise the number I can keep on
-        my worst day and beat it on every other one.</p>
+        <p>The contract guarantees acknowledgment within 2 business hours and most content changes live
+        the same business day. In practice, small changes often ship within the hour. I promise the
+        number I can keep on my worst day and beat it on every other one.</p>
       </div>
     </details>
 
     <details>
-      <summary>We're not on Concrete CMS. Does this still apply?</summary>
+      <summary>Can you really take over a site you didn't build?</summary>
       <div class="a">
-        <p>Yes. Concrete CMS is my deepest specialty, so migrations off it are where I have the most unfair
-        advantage — but the model works the same from WordPress, Joomla, or an aging custom build. The pitch
-        does not change: fixed price, real deadline, then a developer in your Slack instead of a CMS.</p>
+        <p>Yes — that's what the stabilization month is for. I get your site into version control,
+        document how it works, and make it safe to change before promising same-day turnaround.
+        If what I find means a rebuild would genuinely cost you less than maintaining what you have,
+        I'll show you that math instead of quietly billing you for fighting it.</p>
       </div>
     </details>
 
     <details>
-      <summary>What does the 12-week sprint not include?</summary>
+      <summary>What does the 12-week rebuild not include?</summary>
       <div class="a">
-        <p>The scope is a one-page document we both sign before kickoff: which pages, which integrations, what
-        gets migrated. Anything outside it goes on the next month's outcome list instead of silently inflating
-        the project. That discipline is why I can put a real date on delivery.</p>
+        <p>The scope is a one-page document we both sign before kickoff: which pages, which integrations,
+        what gets migrated. Anything outside it goes on the next month's outcome list instead of silently
+        inflating the project. That discipline is why I can put a real date on delivery.</p>
       </div>
     </details>
   </div>
 </section>
 
-<section class="roadmap" id="roadmap">
+<section class="band band-clocks">
   <div class="wrap">
-    <div class="kicker">Not ready for a 12-week commitment?</div>
-    <h2>Start with a Website &amp; Tech Roadmap.</h2>
-    <p class="price-line">$500 · delivered in one week</p>
-    <p>
-      I audit your current site and stack — security posture, performance, what your CMS situation actually is,
-      what a rebuild would and would not involve — and deliver a prioritized, plain-English plan. It is yours to
-      execute with anyone, including not me.
-    </p>
-    <a class="btn big" href="#contact">Request a Roadmap</a>
+    <div class="kicker">The part nobody else will put in writing</div>
+    <h2>The deadline has teeth.</h2>
+    <p>If your rebuild isn't live on the date we agreed to, you stop paying until it is.
+    Ask the last agency you worked with if they'll sign that sentence.</p>
   </div>
 </section>
 
@@ -511,13 +625,13 @@
   <div class="wrap">
     <h2>Who you'd be working with</h2>
     <p>
-      I'm Alexander Schottky, a full-stack web developer based in Missouri with over fifteen years of experience
-      building and running websites and web applications for businesses. My clients tend to stay: my current
-      retainer relationships run four to six years and counting.
+      I'm Alexander Schottky, a full-stack web developer based in Missouri with over fifteen years of
+      experience building and running websites and web applications for businesses. My clients tend to
+      stay: my current retainer relationships run four to six years and counting.
     </p>
     <p>
-      I work with a small number of companies at a time — deliberately. This is not an agency with account
-      managers between you and the person doing the work. When you message, the developer answers.
+      I work with a small number of companies at a time — deliberately. This is not an agency with
+      account managers between you and the person doing the work. When you message, the developer answers.
     </p>
   </div>
 </section>
@@ -526,10 +640,10 @@
   <div class="wrap">
     <h2 class="serif">One call. Twenty minutes. A number and a date.</h2>
     <p>
-      Tell me what you have and what you want. I'll tell you honestly whether this model fits your business —
+      Tell me what you have and what you want. I'll tell you honestly whether this fits your business —
       and if it does, you leave the call with a fixed price and a delivery date.
     </p>
-    <a class="btn big" href="mailto:CONTACT-TBD@example.com?subject=Fractional%20CTO%20inquiry">Book a 20-minute call</a>
+    <a class="btn big" href="mailto:CONTACT-TBD@example.com?subject=Website%20inquiry">Book a 20-minute call</a>
     <p class="hero-note" style="margin-top:20px">Prefer email? Write me what you're running today and I'll reply within one business day.</p>
   </div>
 </section>
