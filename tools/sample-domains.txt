@@ -1,0 +1,3 @@
+# One domain per line. Sources: BuiltWith concrete5 lists, local business directories,
+# Chamber of Commerce member lists, or any URL export. Lines starting with # are skipped.
+concretecms.com

@@ -64,6 +64,7 @@
   }
   .nav{display:flex;align-items:center;justify-content:space-between;height:64px}
   .logo{font-family:'Newsreader',serif;font-size:1.25rem;font-weight:600;color:var(--ink)}
+  a.logo:hover{text-decoration:none;color:var(--ink)}
   .logo span{color:var(--accent)}
   .nav-links{display:flex;gap:28px;align-items:center;font-size:.92rem;font-weight:500}
   .nav-links a{color:var(--ink-soft)}
@@ -319,7 +320,7 @@
 
 <header>
   <div class="wrap nav">
-    <div class="logo">Alexander <span>Schottky</span></div>
+    <a class="logo" href="#">Alexander <span>Schottky</span></a>
     <nav class="nav-links">
       <a href="#offer">The Offer</a>
       <a href="#no-timesheets">How It Works</a>
