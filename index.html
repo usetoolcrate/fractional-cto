@@ -885,5 +885,36 @@ src="https://www.facebook.com/tr?id=2535747113554426&ev=PageView&noscript=1"
   </div>
 </footer>
 
+<script>
+(function(){
+  /* Ad traffic lands on #developer-built. On a cold load the browser's own
+     fragment scroll can be undone by late web fonts and images shifting the
+     page, leaving the visitor at the top instead of the block the ad promised.
+     Re-apply the jump once layout has settled — unless the visitor has already
+     started scrolling themselves. */
+  if (!location.hash) return;
+  var moved = false;
+  ['wheel','touchmove','keydown','mousedown'].forEach(function(t){
+    window.addEventListener(t, function(){ moved = true; }, {passive:true, once:true});
+  });
+  function jumpToHash(){
+    if (moved) return;
+    var el = document.getElementById(location.hash.slice(1));
+    if (!el) return;
+    var root = document.documentElement;
+    var prev = root.style.scrollBehavior;
+    root.style.scrollBehavior = 'auto';   // land immediately, no slow crawl
+    el.scrollIntoView();                  // respects scroll-margin-top under the sticky header
+    root.style.scrollBehavior = prev;
+  }
+  window.addEventListener('load', function(){
+    jumpToHash();
+    setTimeout(jumpToHash, 150);
+    setTimeout(jumpToHash, 600);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(jumpToHash);
+  });
+})();
+</script>
+
 </body>
 </html>
