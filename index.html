@@ -101,34 +101,40 @@
     color:var(--brass);margin-bottom:18px;
   }
 
-  /* ---------- slack mock ---------- */
-  .chat{
+  /* ---------- method card ---------- */
+  .method{
     background:#fff;border:1px solid var(--line);border-radius:14px;
     box-shadow:0 24px 60px -24px rgba(28,30,33,.28);
     overflow:hidden;transform:rotate(1.2deg);
   }
-  @media(max-width:900px){.chat{transform:none;max-width:480px}}
-  .chat-head{
-    background:var(--ink);color:#e9e6df;padding:14px 20px;
-    font-size:.85rem;font-weight:600;display:flex;align-items:center;gap:10px;
+  @media(max-width:900px){.method{transform:none;max-width:480px}}
+  .method-head{
+    background:var(--ink);color:#e9e6df;padding:16px 28px;
+    font-size:.71rem;font-weight:600;text-transform:uppercase;letter-spacing:.14em;
   }
-  .chat-head .dot{width:9px;height:9px;border-radius:50%;background:#3ecf8e;flex-shrink:0}
-  .chat-body{padding:20px 20px 8px}
-  .msg{display:flex;gap:12px;margin-bottom:18px}
-  .avatar{
-    width:36px;height:36px;border-radius:8px;flex-shrink:0;
+  .method-steps{list-style:none;padding:32px 28px 4px}
+  .method-steps li{display:flex;gap:17px;padding-bottom:28px}
+  .method-steps li:last-child{padding-bottom:22px}
+  .step-n{
+    flex-shrink:0;width:34px;height:34px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    font-size:.8rem;font-weight:700;color:#fff;
+    border:1px solid rgba(176,129,47,.42);background:rgba(176,129,47,.07);
+    font-family:'Newsreader',serif;font-size:1.05rem;line-height:1;color:var(--brass);
   }
-  .avatar.client{background:#8a6d3b}
-  .avatar.dev{background:var(--accent)}
-  .msg .who{font-size:.82rem;font-weight:700;margin-bottom:2px}
-  .msg .who span{font-weight:400;color:var(--ink-faint);font-size:.76rem;margin-left:6px}
-  .msg p{font-size:.92rem;color:var(--ink-soft);line-height:1.5}
-  .chat-annot{
+  .step-t{
+    font-family:'Newsreader',serif;font-size:1.14rem;font-weight:500;
+    line-height:1.2;color:var(--ink);margin-bottom:5px;
+  }
+  .method-steps p{font-size:.93rem;color:var(--ink-soft);line-height:1.55}
+  .method-foot{
+    border-top:1px dashed var(--line);margin:0 28px;padding:17px 0 23px;
+    font-family:'Newsreader',serif;font-style:italic;
+    font-size:.93rem;line-height:1.45;color:var(--ink-faint);
+  }
+  .card-annot{
     display:flex;align-items:flex-start;gap:6px;margin-top:18px;justify-content:center;
   }
-  .chat-annot svg{flex-shrink:0;margin-top:2px}
+  .card-annot svg{flex-shrink:0;margin-top:2px}
 
   /* ---------- proof bar ---------- */
   .proof-bar{
@@ -426,38 +432,36 @@ src="https://www.facebook.com/tr?id=2535747113554426&ev=PageView&noscript=1"
         <p class="hero-note">No agency. No ticket queue. No hour reports. Your business keeps control of its domain, accounts, data, and website.</p>
       </div>
       <div>
-        <div class="chat">
-          <div class="chat-head"><span class="dot"></span> #website — you &amp; Alexander</div>
-          <div class="chat-body">
-            <div class="msg">
-              <div class="avatar client">JM</div>
+        <div class="method">
+          <div class="method-head">How a broken handoff gets handled</div>
+          <ol class="method-steps">
+            <li>
+              <span class="step-n" aria-hidden="true">1</span>
               <div>
-                <div class="who">Office Manager <span>9:14 AM</span></div>
-                <p>Leads from the quote form are still going to the shared inbox. Can you get them to
-                the right estimator and make sure we can see what happened?</p>
+                <div class="step-t">Find the break</div>
+                <p>You show me what is going wrong.</p>
               </div>
-            </div>
-            <div class="msg">
-              <div class="avatar dev">AS</div>
+            </li>
+            <li>
+              <span class="step-n" aria-hidden="true">2</span>
               <div>
-                <div class="who">Alexander <span>9:27 AM</span></div>
-                <p>I found the break. I'll fix the routing, log each request in your CRM, and send you
-                a test before it goes live.</p>
+                <div class="step-t">Fix the right thing</div>
+                <p>I trace the issue, make the change, and keep you informed.</p>
               </div>
-            </div>
-            <div class="msg">
-              <div class="avatar dev">AS</div>
+            </li>
+            <li>
+              <span class="step-n" aria-hidden="true">3</span>
               <div>
-                <div class="who">Alexander <span>11:06 AM</span></div>
-                <p>Live. New requests now reach the estimator, create a CRM record, and alert the
-                office. I tested the full path with your team.</p>
+                <div class="step-t">Check it end to end</div>
+                <p>We test the real path before calling it done.</p>
               </div>
-            </div>
-          </div>
+            </li>
+          </ol>
+          <p class="method-foot">From quote forms and booking flows to the site itself.</p>
         </div>
-        <div class="chat-annot">
+        <div class="card-annot">
           <svg width="26" height="30" viewBox="0 0 26 30" aria-hidden="true"><path d="M22 2 C 14 8, 8 14, 6 24 M6 24 l-3 -7 M6 24 l8 -3" fill="none" stroke="#b0812f" stroke-width="2" stroke-linecap="round"/></svg>
-          <span class="hand">find the failure, connect the work, test it end to end</span>
+          <span class="hand">Find the break. Fix it. Check the whole path.</span>
         </div>
       </div>
     </div>
