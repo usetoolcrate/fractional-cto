@@ -230,6 +230,36 @@
     font-family:'Newsreader',serif;font-style:italic;color:var(--ink-soft);font-size:1.05rem;
   }
 
+  /* ---------- beyond the page ---------- */
+  .beyond .opener{
+    font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.15em;
+    color:var(--brass);margin-bottom:16px;
+  }
+  .beyond h2{font-size:clamp(1.9rem,3.8vw,2.7rem);margin-bottom:16px;max-width:720px}
+  .beyond .lead{color:var(--ink-soft);max-width:680px;margin-bottom:52px;font-size:1.08rem}
+  .cap-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:860px){.cap-grid{grid-template-columns:1fr;max-width:560px;margin:0 auto}}
+  .cap{
+    background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:26px 28px 25px;
+  }
+  .cap::before{
+    content:"";display:block;width:24px;height:2px;border-radius:2px;
+    background:var(--brass);opacity:.55;margin-bottom:15px;
+  }
+  .cap h3{
+    font-family:'Inter',sans-serif;font-size:1.04rem;font-weight:600;letter-spacing:0;
+    line-height:1.35;color:var(--ink);margin-bottom:7px;
+  }
+  .cap p{
+    font-family:'Newsreader',serif;font-style:italic;
+    font-size:1rem;line-height:1.5;color:var(--ink-soft);
+  }
+  .beyond-note{
+    max-width:680px;margin:46px auto 0;text-align:center;
+    font-family:'Newsreader',serif;font-style:italic;color:var(--ink-soft);font-size:1.05rem;
+  }
+
   /* ---------- EOL / platforms ---------- */
   .eol{background:var(--ink);color:#e9e6df;padding:76px 0}
   .eol .wrap{max-width:900px}
@@ -597,6 +627,46 @@ src="https://www.facebook.com/tr?id=2535747113554426&ev=PageView&noscript=1"
     <p class="offer-note">Every project starts with the same thing: send me your website and tell me
     what is not working. I will take a free look before we talk. If there is a fit, you get a clear
     scope, a real price, and a real date in writing.</p>
+  </div>
+</section>
+
+<section class="beyond" id="beyond">
+  <div class="wrap">
+    <p class="opener">Beyond the page</p>
+    <h2>When the website needs to do more</h2>
+    <p class="lead">A website is often only the front door. I can also fix the handoffs and small
+    systems behind it — so a customer's next step actually reaches the right person and gets handled.</p>
+
+    <div class="cap-grid">
+      <div class="cap">
+        <h3>Take payments or sell online</h3>
+        <p>Stripe, checkout, orders, subscriptions, customer accounts</p>
+      </div>
+      <div class="cap">
+        <h3>Get leads to the right person</h3>
+        <p>Quote forms, scheduling, CRM handoffs, notifications, follow-up</p>
+      </div>
+      <div class="cap">
+        <h3>Connect the tools you already use</h3>
+        <p>APIs, accounting or field-service connections, data moving between systems</p>
+      </div>
+      <div class="cap">
+        <h3>Give your team a simple internal tool</h3>
+        <p>Admin screens, customer portals, status dashboards, one-purpose editors</p>
+      </div>
+      <div class="cap">
+        <h3>Remove repetitive work</h3>
+        <p>Routing requests, reminders, updates, documents, communication workflows</p>
+      </div>
+      <div class="cap">
+        <h3>Build the unusual thing your business needs</h3>
+        <p>A practical custom workflow when off-the-shelf software is the wrong fit</p>
+      </div>
+    </div>
+
+    <p class="beyond-note">If it touches your website, customers, or team workflow, put it in the
+    free review. I'll tell you plainly whether I can build it, connect it, or whether another tool
+    is the better answer.</p>
   </div>
 </section>
 
