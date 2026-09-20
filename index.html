@@ -79,6 +79,7 @@
   .btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
   .btn.ghost:hover{background:var(--accent);color:#fff}
   .btn.big{padding:16px 34px;font-size:1.02rem}
+  .btn[hidden]{display:none}
 
   /* ---------- hero ---------- */
   .hero{padding:96px 0 72px}
@@ -246,6 +247,21 @@
   }
   .plat p a{color:#d9a441}
   .plat.spec{border-top:1px solid rgba(217,164,65,.5)}
+  .plat-cta{
+    display:flex;align-items:center;justify-content:space-between;gap:16px 24px;flex-wrap:wrap;
+    margin:0 0 4px;padding:18px 22px;border-radius:10px;
+    background:rgba(217,164,65,.08);border:1px solid rgba(217,164,65,.32);
+  }
+  .plat-cta p{
+    margin:0;max-width:none;color:#e9e6df;font-size:1.02rem;
+    font-family:'Newsreader',serif;font-style:italic;
+  }
+  .plat-cta .btn{background:#d9a441;color:#1c1e21;white-space:nowrap}
+  .plat-cta .btn:hover{background:#e8b556;color:#1c1e21}
+  @media(max-width:600px){
+    .plat-cta{flex-direction:column;align-items:stretch;gap:14px}
+    .plat-cta .btn{text-align:center}
+  }
 
   /* ---------- no timesheets ---------- */
   .nots h2{font-size:clamp(1.9rem,3.8vw,2.7rem);max-width:720px;margin-bottom:24px}
@@ -327,6 +343,11 @@
   .review-form .btn{width:100%;text-align:center;border:none;cursor:pointer;font-family:inherit}
   .rf-bot{position:absolute;left:-9999px;opacity:0}
   .rf-error{margin-top:14px;color:#a33d32;font-size:.92rem}
+  .call-alt{
+    max-width:640px;margin:0 auto 26px;display:flex;align-items:center;justify-content:center;
+    gap:8px 16px;flex-wrap:wrap;font-size:.98rem;color:var(--ink-soft);
+  }
+  .call-alt .btn{padding:11px 22px;font-size:.93rem}
   .review-thanks{
     max-width:560px;margin:0 auto;background:#f4f9f6;border:1px solid #cfe3d8;
     border-radius:12px;padding:32px;color:var(--ink-soft);
@@ -533,7 +554,7 @@ src="https://www.facebook.com/tr?id=2535747113554426&ev=PageView&noscript=1"
       <div class="plan featured">
         <div class="door">Door two — "rebuild my site"</div>
         <h3>Make the website do its job</h3>
-        <div class="price">from $8,000<small>one fixed number and date, put in writing before work starts</small></div>
+        <div class="price">Fixed project price<small>one number and one launch date, agreed in writing before work starts</small></div>
         <div class="terms">For a business ready to fix the work holding it back: credibility, lead flow,
         customer experience, online sales, or the systems wrapped around the site. We agree on the job,
         the number, and the date before work begins.</div>
@@ -598,6 +619,11 @@ src="https://www.facebook.com/tr?id=2535747113554426&ev=PageView&noscript=1"
       <p>And now nobody answers the phone, nobody has the passwords, and everyone's afraid to touch it.
       That's exactly what door one — <a href="#offer">"take over my site"</a> — exists for.</p>
       <p class="outcome">What changes: one point of contact who documents everything, so the next person isn't guessing either.</p>
+    </div>
+
+    <div class="plat-cta">
+      <p>Not sure who can safely touch your site anymore?</p>
+      <a class="btn" href="#contact">Ask Alexander to take a look</a>
     </div>
 
     <div class="plat">
@@ -783,28 +809,20 @@ src="https://www.facebook.com/tr?id=2535747113554426&ev=PageView&noscript=1"
   <div class="wrap">
     <h2 class="serif">Start with a free review of your site.</h2>
     <p>
-      Send me your website address and what's been bugging you about it. I'll take a look before we
-      ever talk — free — and you get a straight quote: a number and a date, in writing. If I'm not
-      the right fit, I'll tell you that too.
+      Send me your website and tell me what isn't working. I'll look at the actual site before we
+      talk and reply within one business day with what I see and the practical next step.
+      No sales call required.
     </p>
-    <form id="review-form" class="review-form" hidden novalidate>
+    <div class="call-alt">
+      <span>Rather talk it through?</span>
+      <a class="btn ghost" href="https://cal.com/alexander-schottky/intro-call" target="_blank" rel="noopener">Book a 20-minute call</a>
+    </div>
+    <form id="review-form" class="review-form" novalidate>
       <div class="rf-grid">
         <label>Name<input type="text" name="name" required autocomplete="name"></label>
         <label>Email<input type="email" name="email" required autocomplete="email"></label>
-        <label>Company <span class="opt">optional</span><input type="text" name="company" autocomplete="organization"></label>
-        <label>Website URL<input type="text" name="website" required placeholder="yourcompany.com"></label>
-        <label class="rf-full">What platform is it on?
-          <select name="platform" required>
-            <option value="" selected disabled>Choose one</option>
-            <option>WordPress</option>
-            <option>concrete5</option>
-            <option>Wix</option>
-            <option>Squarespace</option>
-            <option>A developer built it</option>
-            <option>Not sure</option>
-          </select>
-        </label>
-        <label class="rf-full">What's bugging you about it? <span class="opt">optional</span><textarea name="message" rows="3"></textarea></label>
+        <label class="rf-full">Website URL<input type="text" name="website" required placeholder="yourcompany.com"></label>
+        <label class="rf-full">What's not working? <span class="opt">optional</span><textarea name="message" rows="3"></textarea></label>
       </div>
       <input type="checkbox" name="botcheck" class="rf-bot" tabindex="-1" autocomplete="off">
       <button type="submit" class="btn big">Request my free review</button>
@@ -814,25 +832,21 @@ src="https://www.facebook.com/tr?id=2535747113554426&ev=PageView&noscript=1"
       <p class="serif" style="font-size:1.4rem;margin-bottom:8px">Got it — thank you.</p>
       <p>I'll take a look at your site and reply within one business day, usually with a number and a date.</p>
     </div>
-    <p id="cal-secondary" class="hero-note" hidden style="margin-top:22px">Rather talk it through right away?
-      <a href="https://cal.com/alexander-schottky/intro-call" target="_blank" rel="noopener">Book a 20-minute call</a></p>
-    <a id="cal-primary" class="btn big" href="https://cal.com/alexander-schottky/intro-call" target="_blank" rel="noopener">Request my free review</a>
     <p class="hero-note" style="margin-top:20px">Prefer email? Write me at <a href="mailto:alex@schottky.com">alex@schottky.com</a> with what you're running today and I'll reply within one business day.</p>
 
     <script>
     (function(){
       var W3F_KEY = "288069a1-2b37-4bad-8e76-77ee771e0ddc";
       var form = document.getElementById('review-form');
-      var calPrimary = document.getElementById('cal-primary');
-      var calSecondary = document.getElementById('cal-secondary');
+      if (!form) return;
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(W3F_KEY)) {
-        return; // no key yet: Cal.com button stays primary, form stays hidden
+        form.hidden = true; // no valid key: never show a form that cannot deliver
+        return;
       }
-      form.hidden = false;
-      calPrimary.hidden = true;
-      calSecondary.hidden = false;
+      var sent = false;
       form.addEventListener('submit', function(e){
         e.preventDefault();
+        if (sent) return; // Lead fires exactly once
         if (form.querySelector('.rf-bot').checked) return; // honeypot
         if (!form.reportValidity()) return;
         var btn = form.querySelector('button[type=submit]');
@@ -849,6 +863,7 @@ src="https://www.facebook.com/tr?id=2535747113554426&ev=PageView&noscript=1"
           body: JSON.stringify(data)
         }).then(function(r){ return r.json(); }).then(function(res){
           if (res.success) {
+            sent = true;
             form.hidden = true;
             document.getElementById('review-thanks').hidden = false;
             if (window.fbq) { fbq('track', 'Lead'); }
