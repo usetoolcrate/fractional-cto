@@ -260,6 +260,7 @@
 
   // Date of the last charge in a phase of n monthly charges starting at start.
   function lastCharge(start, n) { var d = new Date(start * 1000); d.setUTCMonth(d.getUTCMonth() + n - 1); return Math.floor(d.getTime() / 1000); }
+  function months(n) { return n + (n === 1 ? " month" : " months"); }
   function monthsBetween(a, b) {
     var da = new Date(a * 1000), db = new Date(b * 1000);
     return (db.getUTCFullYear() - da.getUTCFullYear()) * 12 + (db.getUTCMonth() - da.getUTCMonth());
@@ -378,7 +379,7 @@
       } });
       out.appendChild(el("div", { class: "codebox" }, [el("code", { text: r.data.code }), copy]));
       if (r.data.emailed) { msg.className = "msg ok"; msg.textContent = "Invite emailed to " + r.data.to + ". The previous code no longer works."; }
-      else if (r.data.emailError) { msg.textContent = "New code is live, but the email didn't send: " + r.data.emailError + " Send the code yourself."; }
+      else if (r.data.emailError) { msg.textContent = "The email didn't send. " + r.data.emailError; }
       else { msg.className = "msg ok"; msg.textContent = "New code is live. The previous code no longer works."; }
     }
     return el("section", { class: "panel sec" }, [
@@ -473,15 +474,15 @@
     var phases = el("ul", { class: "phases" });
     pd.phases.forEach(function (p, i) {
       var when = i === 0
-        ? (p.ongoing ? "Monthly from the day they pay" : p.months + " months from the day they pay · " + money(p.amount * p.months) + " total")
-        : (p.ongoing ? "After that, ongoing" : "Then " + p.months + " months · " + money(p.amount * p.months) + " total");
+        ? (p.ongoing ? "Monthly from the day they pay" : months(p.months) + " from the day they pay · " + money(p.amount * p.months) + " total")
+        : (p.ongoing ? "After that, ongoing" : "Then " + months(p.months) + " · " + money(p.amount * p.months) + " total");
       phases.appendChild(el("li", {}, [
         el("span", { class: "amt num", text: money(p.amount) + " / month" }),
         el("span", { class: "pill " + (i === 0 ? "warn" : "muted"), text: i === 0 ? "Waiting" : "Later" }),
         el("span", { class: "when", text: when }),
         el("span", { class: "items", text: p.items.map(function (it) { return it.name + " " + money(it.amount); }).join(" + ") }),
         el("span", { class: "net", text: keepText(p.amount, "subscription", null, "/mo") +
-          (p.ongoing ? "" : " · ≈ " + money(keep(p.amount, "bank") * p.months) + " over " + p.months + " months by bank") }),
+          (p.ongoing ? "" : " · ≈ " + money(keep(p.amount, "bank") * p.months) + " over " + months(p.months) + " by bank") }),
       ]));
     });
     var seen = {}, billed = [];
@@ -507,7 +508,7 @@
     var phases = el("ul", { class: "phases" });
     a.plan.forEach(function (p) {
       var when = p.ongoing ? "From " + monthYear(p.start) + ", ongoing"
-        : monthYear(p.start) + " – " + monthYear(lastCharge(p.start, monthsBetween(p.start, p.end))) + " · " + monthsBetween(p.start, p.end) + " months · " + money(p.amount * monthsBetween(p.start, p.end)) + " total";
+        : monthYear(p.start) + " – " + monthYear(lastCharge(p.start, monthsBetween(p.start, p.end))) + " · " + months(monthsBetween(p.start, p.end)) + " · " + money(p.amount * monthsBetween(p.start, p.end)) + " total";
       var tag = p.current || (p.ongoing && p.start <= now) ? ["Now", "ok"] : p.start > now ? ["Later", "muted"] : ["Done", "muted"];
       phases.appendChild(el("li", {}, [
         el("span", { class: "amt num", text: money(p.amount) + " / month" }),
@@ -515,7 +516,7 @@
         el("span", { class: "when", text: when }),
         el("span", { class: "items", text: (p.items || []).map(function (it) { return it.name + " " + money(it.amount); }).join(" + ") }),
         el("span", { class: "net", text: keepText(p.amount, "subscription", methodOf(a), "/mo") +
-          (p.ongoing || !p.end ? "" : " · ≈ " + money(keep(p.amount, methodOf(a) || "bank") * monthsBetween(p.start, p.end)) + " over " + monthsBetween(p.start, p.end) + " months" + (methodOf(a) ? "" : " by bank")) }),
+          (p.ongoing || !p.end ? "" : " · ≈ " + money(keep(p.amount, methodOf(a) || "bank") * monthsBetween(p.start, p.end)) + " over " + months(monthsBetween(p.start, p.end)) + (methodOf(a) ? "" : " by bank")) }),
       ]));
     });
 

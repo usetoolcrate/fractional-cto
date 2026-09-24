@@ -95,7 +95,14 @@ async function issueCode({ id, send }, idem) {
     await sendEmail({ to: customer.email, ...mail, idempotencyKey: idem("invite") });
   } catch (err) {
     // The new code is already live; show it so it can be sent by hand.
-    return json({ code, emailed: false, emailError: err.message });
+    const notReady = /not verified|domain/i.test(err.message);
+    return json({
+      code,
+      emailed: false,
+      emailError: notReady
+        ? "Sending from schottky.com isn't switched on yet: the email service is still verifying the domain. The code above is live, so send it yourself for now."
+        : `${err.message} The code above is live, so send it yourself.`,
+    });
   }
   await adminStripe("POST", `customers/${id}`, { metadata: { invite_sent_at: String(now) } });
   return json({ code, emailed: true, to: customer.email });
