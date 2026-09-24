@@ -109,6 +109,16 @@
   .designer .ongoing{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--ink-soft);padding-bottom:8px;white-space:nowrap}
   .preview{background:var(--accent-tint);border-radius:8px;padding:12px 14px;font-size:.9rem}
   .preview strong{font-variant-numeric:tabular-nums}
+  .net{font-size:.82rem;color:var(--accent);font-weight:500}
+  .phases .net{grid-column:1 / -1}
+  .nettable-wrap{overflow-x:auto;margin-top:8px}
+  .nettable{width:100%;border-collapse:collapse;font-size:.85rem;min-width:520px}
+  .nettable th{text-align:right;font-size:.72rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);padding:4px 8px;border-bottom:1px solid #c9ddd4}
+  .nettable th:first-child,.nettable td:first-child{text-align:left}
+  .nettable td{text-align:right;padding:6px 8px;border-bottom:1px solid #d7e6df;font-variant-numeric:tabular-nums}
+  .nettable tr:last-child td{border-bottom:0}
+  .nettable .keep{color:var(--accent);font-weight:600}
+  .feenote{font-size:.75rem;color:var(--ink-faint)}
 
   .inv{border:1px solid var(--line);border-radius:8px;overflow:hidden}
   .inv-row{display:grid;grid-template-columns:8.5rem minmax(0,1fr) 6.5rem 8rem 6rem;gap:10px;align-items:center;padding:9px 14px;font-size:.88rem}
@@ -187,6 +197,30 @@
   var date = function (s, o) { return new Date(s * 1000).toLocaleDateString("en-US", Object.assign({ timeZone: TZ }, o || { month: "short", day: "numeric", year: "numeric" })); };
   var monthYear = function (s) { return date(s, { month: "short", year: "numeric" }); };
   var rid = function () { return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()); };
+
+  /* What I keep after Stripe fees (admin-only estimate). Stripe US standard
+     pricing checked Sept 2026: card 2.9% + 30¢; ACH Direct Debit 0.8% capped
+     at $5; Stripe Billing 0.7% on subscription payments; Stripe Invoicing
+     0.4% on one-off invoices. Stripe rounds per charge, so cents may differ.
+     Not included: disputes, failed ACH ($4), instant payouts. */
+  var FEES = { cardPct: 0.029, cardFixed: 30, achPct: 0.008, achCap: 500, billingPct: 0.007, invoicingPct: 0.004 };
+  function stripeFee(amount, method, kind) {
+    var processing = method === "bank" ? Math.min(Math.round(amount * FEES.achPct), FEES.achCap) : Math.round(amount * FEES.cardPct) + FEES.cardFixed;
+    return processing + Math.round(amount * (kind === "invoice" ? FEES.invoicingPct : FEES.billingPct));
+  }
+  function keep(amount, method, kind) { return amount - stripeFee(amount, method, kind || "subscription"); }
+  function methodOf(a) { return a && a.autopay ? (a.autopay.kind === "bank" ? "bank" : "card") : null; }
+  function keepText(amount, kind, prefer, suffix) {
+    suffix = suffix || "";
+    var b = money(keep(amount, "bank", kind)) + suffix, c = money(keep(amount, "card", kind)) + suffix;
+    if (prefer === "bank") return "You keep ≈ " + b + " (their bank on file; " + c + " if by card)";
+    if (prefer === "card") return "You keep ≈ " + c + " (their card on file; " + b + " if by bank)";
+    return "You keep ≈ " + b + " by bank · " + c + " by card";
+  }
+  function feeNote(kind) {
+    return el("p", { class: "feenote", text: "“You keep” is an estimate after Stripe fees: card 2.9% + 30¢, bank 0.8% (max $5), plus " +
+      (kind === "invoice" ? "0.4% Stripe Invoicing" : "0.7% Stripe Billing") + ". Only you see this; clients never do." });
+  }
 
   function el(tag, attrs, kids) {
     var n = document.createElement(tag);
@@ -291,7 +325,9 @@
     ]));
 
     box.appendChild(el("div", { class: "tiles" }, [
-      tile("Next charge", a.nextCharge ? money(a.nextCharge.amount) : "—", a.nextCharge ? date(a.nextCharge.date) : "Nothing scheduled"),
+      tile("Next charge", a.nextCharge ? money(a.nextCharge.amount) : "—", a.nextCharge
+        ? date(a.nextCharge.date) + " · you keep ≈ " + money(keep(a.nextCharge.amount, methodOf(a) || "bank")) + (methodOf(a) ? "" : " by bank")
+        : "Nothing scheduled"),
       tile("Autopay", a.autopay ? a.autopay.label : "Not set up", a.autopay ? (a.autopay.kind === "bank" ? "Bank (ACH)" : "Card") : "Client sets it up at /payments"),
       tile("Owed now", owedSum ? money(owedSum) : "$0.00", owed.some(function (i) { return i.attempted; }) ? "A payment failed; Stripe is retrying" : owed.length ? owed.length + " open invoice(s)" : "All paid"),
     ]));
@@ -348,6 +384,8 @@
         el("span", { class: "pill " + tag[1], text: tag[0] }),
         el("span", { class: "when", text: when }),
         el("span", { class: "items", text: (p.items || []).map(function (it) { return it.name + " " + money(it.amount); }).join(" + ") }),
+        el("span", { class: "net", text: keepText(p.amount, "subscription", methodOf(a), "/mo") +
+          (p.ongoing || !p.end ? "" : " · ≈ " + money(keep(p.amount, methodOf(a) || "bank") * monthsBetween(p.start, p.end)) + " over " + monthsBetween(p.start, p.end) + " months" + (methodOf(a) ? "" : " by bank")) }),
       ]));
     });
 
@@ -383,6 +421,11 @@
     var name = el("input", { class: "i", id: "ao-name", placeholder: "Social media management", autocomplete: "off" });
     var amt = el("input", { class: "i num", id: "ao-amt", inputmode: "decimal", placeholder: "360" });
     var addBtn = el("button", { class: "btn", type: "submit", text: "Add to plan" });
+    var addNet = el("p", { class: "net" });
+    amt.addEventListener("input", function () {
+      var c = toCents(amt.value);
+      addNet.textContent = c >= 100 ? "+" + money(c) + "/mo for the client. " + keepText(c, "subscription", methodOf(a), "/mo") + "." : "";
+    });
     var addForm = el("form", { class: "row", novalidate: true, onsubmit: async function (e) {
       e.preventDefault(); msg.textContent = ""; addBtn.disabled = true;
       var r = await api("/api/admin/client", { id: a.id, action: "addon-add", name: name.value, amount: amt.value });
@@ -400,7 +443,7 @@
       phases,
       el("h3", { style: "font-size:1.05rem;margin-top:6px", text: "Billed items" }),
       el("p", { class: "hint", text: "Adding or removing an item changes this month forward and every later phase. Nothing is prorated." }),
-      list, confirmBox, addForm, msg,
+      list, confirmBox, addForm, addNet, msg, feeNote("subscription"),
     ]);
   }
 
@@ -453,20 +496,25 @@
     function summary() {
       var s = start.value;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return { error: "Pick a start date." };
-      var lines = [], offset = 0, total = 0, firstAmount = null;
+      var lines = [], phases = [], offset = 0, total = 0, firstAmount = null;
       for (var i = 0; i < rows.length; i++) {
         var r = rows[i], c = toCents(r.amount);
         if (!r.name.trim()) return { error: "Phase " + (i + 1) + " needs a name." };
         if (!(c >= 100)) return { error: "Phase " + (i + 1) + " needs an amount." };
         if (firstAmount === null) firstAmount = c;
-        if (r.ongoing) { lines.push("then " + money(c) + "/mo ongoing from " + fmtMonth(addMonths(s, offset))); break; }
+        if (r.ongoing) {
+          lines.push("then " + money(c) + "/mo ongoing from " + fmtMonth(addMonths(s, offset)));
+          phases.push({ label: money(c) + "/mo ongoing from " + fmtMonth(addMonths(s, offset)), amount: c, months: null });
+          break;
+        }
         var m = Number(r.months);
         if (!(Number.isInteger(m) && m >= 1 && m <= 60)) return { error: "Phase " + (i + 1) + " needs 1 to 60 months." };
         lines.push((i ? "then " : "") + money(c) + "/mo × " + m + " (" + fmtMonth(addMonths(s, offset)) + " – " + fmtMonth(addMonths(s, offset + m - 1)) + ") = " + money(c * m));
+        phases.push({ label: money(c) + "/mo × " + m + " (" + fmtMonth(addMonths(s, offset)) + " – " + fmtMonth(addMonths(s, offset + m - 1)) + ")", amount: c, months: m });
         total += c * m; offset += m;
         if (i === rows.length - 1) lines.push("then the plan ends (" + fmtMonth(addMonths(s, offset)) + ")");
       }
-      return { lines: lines, total: total, first: firstAmount };
+      return { lines: lines, phases: phases, total: total, first: firstAmount };
     }
 
     function update() {
@@ -475,6 +523,31 @@
       if (sm.error) { preview.appendChild(el("span", { text: sm.error })); return; }
       preview.appendChild(el("strong", { text: "Starts " + new Date(start.value + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) + ". " }));
       preview.appendChild(document.createTextNode(sm.lines.join(", ") + "." + (sm.total ? " Fixed-term total " + money(sm.total) + "." : "")));
+
+      // Admin-only: what I keep after Stripe fees, per phase and for the fixed term.
+      var cell = function (t, cls) { return el("td", { class: cls || null, text: t }); };
+      var body = sm.phases.map(function (ph) {
+        var n = ph.months || 1, sfx = ph.months ? "" : "/mo";
+        return el("tr", {}, [
+          cell(ph.label),
+          cell(money(ph.amount * n) + sfx),
+          cell(money(keep(ph.amount, "bank") * n) + sfx, "keep"),
+          cell(money(keep(ph.amount, "card") * n) + sfx),
+        ]);
+      });
+      var fixed = sm.phases.filter(function (ph) { return ph.months; });
+      if (fixed.length > 1) {
+        body.push(el("tr", {}, [
+          cell("Fixed-term total"),
+          cell(money(sm.total)),
+          cell(money(fixed.reduce(function (t, ph) { return t + keep(ph.amount, "bank") * ph.months; }, 0)), "keep"),
+          cell(money(fixed.reduce(function (t, ph) { return t + keep(ph.amount, "card") * ph.months; }, 0))),
+        ]));
+      }
+      preview.appendChild(el("div", { class: "nettable-wrap" }, [el("table", { class: "nettable" }, [
+        el("thead", {}, [el("tr", {}, [el("th", { text: "Phase" }), el("th", { text: "Client pays" }), el("th", { text: "You keep (bank)" }), el("th", { text: "You keep (card)" })])]),
+        el("tbody", {}, body),
+      ])]));
     }
     start.addEventListener("input", update);
 
@@ -511,7 +584,7 @@
         rows.forEach(function (r) { if (r.ongoing) { r.ongoing = false; if (!r.months) r.months = "12"; } });
         rows.push({ name: "Hosting & maintenance", amount: "", months: "", ongoing: true }); draw();
       } })]),
-      preview, el("div", {}, [createBtn]), confirmBox, msg,
+      preview, feeNote("subscription"), el("div", {}, [createBtn]), confirmBox, msg,
     ]);
   }
 
@@ -522,6 +595,11 @@
     var due = el("input", { class: "i num", type: "number", min: "0", max: "90", value: "14" });
     var msg = el("p", { class: "msg err", role: "alert" });
     var btn = el("button", { class: "btn", type: "submit", text: "Send payment request" });
+    var reqNet = el("p", { class: "net" });
+    amt.addEventListener("input", function () {
+      var c = toCents(amt.value);
+      reqNet.textContent = c >= 100 ? keepText(c, "invoice", null) + "." : "";
+    });
     var rq = rid();
     return el("section", { class: "panel sec" }, [
       el("h2", { text: "One-off payment request" }),
@@ -531,7 +609,7 @@
         var r = await api("/api/admin/client", { id: a.id, action: "request", amount: amt.value.replace(/[$,\s]/g, ""), description: desc.value, daysUntilDue: Number(due.value), requestId: rq });
         btn.disabled = false;
         if (!r.ok) { msg.textContent = r.data.error || "Failed."; return; }
-        rq = rid(); amt.value = ""; desc.value = "";
+        rq = rid(); amt.value = ""; desc.value = ""; reqNet.textContent = "";
         msg.className = "msg ok"; msg.textContent = "Sent invoice " + r.data.number + ".";
         setTimeout(function () { openClient(a.id); loadList(); }, 1200);
       } }, [
@@ -540,7 +618,7 @@
         el("label", { class: "f", style: "flex:0 1 110px" }, ["Due in (days)", due]),
         btn,
       ]),
-      msg,
+      reqNet, msg, feeNote("invoice"),
     ]);
   }
 
