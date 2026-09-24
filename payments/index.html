@@ -295,6 +295,8 @@
   }
 
   // Months between two phase boundaries (both at midnight Central on the 1st).
+  // Date of the last charge in a phase of n monthly charges starting at start.
+  function lastCharge(start, n) { var d = new Date(start * 1000); d.setUTCMonth(d.getUTCMonth() + n - 1); return Math.floor(d.getTime() / 1000); }
   function monthsBetween(a, b) {
     var da = new Date(a * 1000), db = new Date(b * 1000);
     return (db.getUTCFullYear() - da.getUTCFullYear()) * 12 + (db.getUTCMonth() - da.getUTCMonth());
@@ -312,7 +314,7 @@
         when = "From " + monthYear(p.start) + ", ongoing";
       } else {
         var n = monthsBetween(p.start, p.end);
-        when = monthYear(p.start) + " – " + monthYear(p.end - 86400) + " · " + n + (n === 1 ? " payment" : " payments");
+        when = monthYear(p.start) + " – " + monthYear(lastCharge(p.start, n)) + " · " + n + (n === 1 ? " payment" : " payments");
       }
       var state = p.current || (p.ongoing && p.start <= now) ? ["Now", "tag"]
         : p.start > now ? (!anyNow && i === 0 ? ["Next", "tag"] : ["Later", "tag later"])
@@ -320,6 +322,29 @@
       list.appendChild(el("li", {}, [
         el("span", { class: "amt", text: money(p.amount) + " / " + (p.interval || "month") }),
         el("span", { class: state[1], text: state[0] }),
+        el("span", { class: "when", text: when }),
+      ]));
+    });
+  }
+
+  // A plan that starts when the client makes the first payment.
+  function dueText(ymd) {
+    var p = ymd.split("-").map(Number);
+    return new Date(Date.UTC(p[0], p[1] - 1, p[2], 12)).toLocaleDateString("en-US", { timeZone: "UTC", month: "long", day: "numeric", year: "numeric" });
+  }
+  function todayCentral() { return new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date()); }
+
+  function renderPendingPlan(pending) {
+    var list = $("plan");
+    list.textContent = "";
+    $("plan-sec").hidden = false;
+    pending.phases.forEach(function (ph, i) {
+      var when = i === 0
+        ? (ph.ongoing ? "Monthly, starting the day you pay" : ph.months + (ph.months === 1 ? " payment" : " payments") + ", starting the day you pay")
+        : (ph.ongoing ? "After that, ongoing" : "Then " + ph.months + (ph.months === 1 ? " payment" : " payments"));
+      list.appendChild(el("li", {}, [
+        el("span", { class: "amt", text: money(ph.amount) + " / month" }),
+        el("span", { class: i === 0 ? "tag" : "tag later", text: i === 0 ? "Next" : "Later" }),
         el("span", { class: "when", text: when }),
       ]));
     });
@@ -333,12 +358,12 @@
     return [inv.status, "other"];
   }
 
-  function renderInvoices(invoices, nextCharge) {
+  function renderInvoices(invoices, nextCharge, emptyText) {
     var box = $("invoices");
     box.textContent = "";
     if (!invoices.length) {
       var first = nextCharge ? " Your first one will be created on " + date(nextCharge.date) + "." : "";
-      box.appendChild(el("p", { class: "empty", text: "No invoices yet." + first }));
+      box.appendChild(el("p", { class: "empty", text: emptyText || "No invoices yet." + first }));
       return;
     }
     box.appendChild(el("div", { class: "inv-row inv-head", "aria-hidden": "true" }, [
@@ -365,6 +390,26 @@
     markTest(a.testMode);
     $("client-name").textContent = a.client.name;
     $("client-email").textContent = a.client.email || "";
+    $("next-tile").classList.remove("warn");
+    $("next-tile").querySelector(".eyebrow").textContent = "Next charge";
+    startMode = Boolean(a.pending);
+
+    if (a.pending) {
+      var overdue = a.pending.due < todayCentral();
+      $("next-tile").querySelector(".eyebrow").textContent = "First payment";
+      $("next-amount").textContent = money(a.pending.first);
+      $("next-when").textContent = (overdue ? "Was due " : "Due by ") + dueText(a.pending.due) + ". Your plan starts the day you pay.";
+      if (overdue) $("next-tile").classList.add("warn");
+      $("autopay-label").textContent = "Starts with your first payment";
+      $("autopay-sub").textContent = "Pay from your bank account (ACH) or with a card. Whatever you use is saved for autopay, so later months are charged automatically.";
+      $("manage-btn").textContent = "Pay " + money(a.pending.first) + " and start my plan";
+      $("manage-btn").className = "btn";
+      $("autopay-tile").classList.remove("warn");
+      renderPendingPlan(a.pending);
+      renderInvoices(a.invoices, null, "No invoices yet. Your first one is created when you make your first payment.");
+      show("account");
+      return;
+    }
 
     var owed = a.invoices.filter(function (i) { return i.status === "open" && !i.processing; });
     var clearing = a.invoices.filter(function (i) { return i.processing; });
@@ -405,6 +450,7 @@
   }
 
   var config = { emailLoginUrl: null, testMode: false };
+  var startMode = false;
 
   async function load() {
     var results = await Promise.all([api("/api/pay/config"), api("/api/pay/account")]);
@@ -453,8 +499,9 @@
     btn.disabled = true;
     var label = btn.textContent;
     btn.textContent = "Opening…";
-    var r = await api("/api/pay/manage", { method: "POST" });
+    var r = await api(startMode ? "/api/pay/start" : "/api/pay/manage", { method: "POST" });
     if (r.ok && r.data && r.data.url) { window.location.href = r.data.url; return; }
+    if (r.ok && r.data && r.data.alreadyStarted) { btn.disabled = false; load(); return; }
     btn.disabled = false;
     btn.textContent = label;
     if (r.status === 401) { show("signin"); return; }
@@ -467,14 +514,28 @@
     load();
   });
 
+  function toast(text) { $("toast").textContent = text; $("toast").hidden = false; }
+
   var params = new URLSearchParams(window.location.search);
   if (params.has("updated")) {
-    $("toast").textContent = "Payment method saved. Future charges will use it.";
-    $("toast").hidden = false;
+    toast("Payment method saved. Future charges will use it.");
     history.replaceState(null, "", window.location.pathname);
   }
 
-  load();
+  (async function () {
+    // Back from paying the first month: apply the plan before showing the account.
+    var session = params.get("started");
+    if (session) {
+      history.replaceState(null, "", window.location.pathname);
+      var r = await api("/api/pay/started", { method: "POST", body: JSON.stringify({ session: session }) });
+      if (r.ok) {
+        toast(r.data.processing
+          ? "Thanks! Your bank payment is on its way (it takes a few business days to clear) and your plan has started. Later months are charged automatically."
+          : "Payment received. Your plan has started, and later months are charged automatically.");
+      }
+    }
+    load();
+  })();
 })();
 </script>
 </body>

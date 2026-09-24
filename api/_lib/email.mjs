@@ -21,17 +21,25 @@ export async function sendEmail({ to, subject, text, html, idempotencyKey }) {
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const money = (cents) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+const dueDay = (ymd) => {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 12)).toLocaleDateString("en-US", { timeZone: "UTC", month: "long", day: "numeric", year: "numeric" });
+};
 const day = (sec) =>
   new Date(sec * 1000).toLocaleDateString("en-US", { timeZone: "America/Chicago", month: "long", day: "numeric", year: "numeric" });
 
 // Written in the first person: it comes from my own address.
-export function inviteEmail({ name, code, nextCharge, hasAutopay }) {
+export function inviteEmail({ name, code, nextCharge, hasAutopay, pending }) {
   const first = String(name || "").trim().split(/\s+/)[0] || "there";
   const url = `${SITE}/payments`;
-  const charge = nextCharge
-    ? `Your next charge is ${money(nextCharge.amount)} on ${day(nextCharge.date)}.`
-    : "";
-  const ask = hasAutopay
+  const charge = pending
+    ? `Your first payment of ${money(pending.first)} is due by ${dueDay(pending.due)}. Your plan starts the day you pay, and after that each month's charge happens automatically.`
+    : nextCharge
+      ? `Your next charge is ${money(nextCharge.amount)} on ${day(nextCharge.date)}.`
+      : "";
+  const ask = pending
+    ? "Sign in and choose Pay and start my plan. You can pay from your bank account or with a card; a bank account keeps fees down, but either works."
+    : hasAutopay
     ? "Autopay is already set up, so there's nothing you need to do. You can sign in any time to see invoices or change your payment method."
     : "Please sign in and choose Set up autopay to connect your bank account or a card. A bank account keeps fees down, but either works. After that, each month's charge happens on its own and you get a receipt by email.";
 

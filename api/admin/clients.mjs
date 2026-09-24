@@ -1,4 +1,5 @@
 import { loadAccount } from "../_lib/account.mjs";
+import { reconcilePending } from "../_lib/plans.mjs";
 import { guard, readJson } from "../_lib/admin.mjs";
 import { json } from "../_lib/session.mjs";
 import { adminStripe, isTestMode } from "../_lib/stripe.mjs";
@@ -11,13 +12,18 @@ export async function GET(request) {
     const found = await adminStripe("GET", "customers/search", { query: "metadata['portal']:'schottky'", limit: 100 });
     const clients = await Promise.all(
       found.data.map(async (c) => {
-        const a = await loadAccount(c.id, { admin: true });
+        let a = await loadAccount(c.id, { admin: true });
+        if (a?.needsReconcile) {
+          await reconcilePending(c.id, a.customer);
+          a = await loadAccount(c.id, { admin: true });
+        }
         const open = a?.invoices.filter((i) => i.status === "open" && !i.processing) ?? [];
         return {
           id: c.id,
           name: c.name || c.email,
           email: c.email,
           plan: a?.plan ?? [],
+          pending: a?.pending ? { due: a.pending.due, first: a.pending.first, phases: a.pending.phases.map((p) => ({ amount: p.amount, months: p.months })) } : null,
           nextCharge: a?.nextCharge ?? null,
           autopay: a?.autopay ?? null,
           owed: open.reduce((s, i) => s + i.remaining, 0),

@@ -69,3 +69,13 @@ export function json(data, status = 200, headers = {}) {
     headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...headers },
   });
 }
+
+export async function readSessionId(request) {
+  try {
+    const body = await request.json();
+    const id = String(body?.session ?? "");
+    return /^cs_(test|live)_[A-Za-z0-9]+$/.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}

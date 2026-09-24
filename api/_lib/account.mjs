@@ -1,5 +1,6 @@
 // Builds one client's billing picture from Stripe. Used by the client portal
 // (/api/pay/account, restricted key) and the admin page (full key, detail on).
+import { decodePending, pendingView } from "./plans.mjs";
 import { stripe } from "./stripe.mjs";
 
 const LIVE_SUB = new Set(["active", "past_due", "trialing", "unpaid", "incomplete"]);
@@ -66,6 +67,10 @@ export async function loadAccount(customerId, { admin = false, detail = false } 
     schedules.data.find((s) => s.status === "not_started") ??
     null;
 
+  // A plan that starts when the client makes the first payment.
+  const pendingRaw = decodePending(customer.metadata?.pending_plan);
+  const pending = pendingRaw && !schedule && !sub ? pendingView(pendingRaw) : null;
+
   let plan = [];
   if (schedule) {
     plan = planFromSchedule(schedule, now, detail);
@@ -125,8 +130,11 @@ export async function loadAccount(customerId, { admin = false, detail = false } 
 
   return {
     customer,
+    // First payment made but the full schedule isn't applied yet (reconcilePending).
+    needsReconcile: Boolean(pendingRaw && sub),
     client: { name: customer.name || customer.email || "Client", email: customer.email },
     plan,
+    pending,
     nextCharge,
     autopay: describePaymentMethod(pm),
     invoices: invoices.data

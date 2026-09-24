@@ -107,6 +107,12 @@
 
   .designer .ph{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 150px;gap:8px;align-items:end;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
   .designer .ongoing{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--ink-soft);padding-bottom:8px;white-space:nowrap}
+  .modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .modeopt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;background:var(--card)}
+  .modeopt:has(input:checked){border-color:var(--accent);background:var(--accent-tint)}
+  .modeopt input{margin-top:3px;accent-color:var(--accent)}
+  .modeopt strong{display:block;font-size:.9rem}
+  .modeopt .hint{display:block;font-size:.8rem;color:var(--ink-soft)}
   .preview{background:var(--accent-tint);border-radius:8px;padding:12px 14px;font-size:.9rem}
   .preview strong{font-variant-numeric:tabular-nums}
   .net{font-size:.82rem;color:var(--accent);font-weight:500}
@@ -133,6 +139,7 @@
     .side{position:static}
     .tiles{grid-template-columns:minmax(0,1fr)}
     .designer .ph{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+    .modes{grid-template-columns:minmax(0,1fr)}
     .designer .ph .nm-f{grid-column:1 / -1}
     .inv-row{grid-template-columns:minmax(0,1fr) auto;gap:2px 10px}
     .inv-row .d{grid-column:1 / -1;grid-row:2}
@@ -251,11 +258,22 @@
   }
   function showApp() { $("login").hidden = true; $("app").hidden = false; $("signout").hidden = false; }
 
+  // Date of the last charge in a phase of n monthly charges starting at start.
+  function lastCharge(start, n) { var d = new Date(start * 1000); d.setUTCMonth(d.getUTCMonth() + n - 1); return Math.floor(d.getTime() / 1000); }
   function monthsBetween(a, b) {
     var da = new Date(a * 1000), db = new Date(b * 1000);
     return (db.getUTCFullYear() - da.getUTCFullYear()) * 12 + (db.getUTCMonth() - da.getUTCMonth());
   }
-  function planLine(plan) {
+  function todayCentral() { return new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date()); }
+  function dueText(ymd) {
+    var p = ymd.split("-").map(Number);
+    return new Date(Date.UTC(p[0], p[1] - 1, p[2], 12)).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" });
+  }
+  function pendingLine(pd) {
+    return "Starts on payment: " + pd.phases.map(function (p) { return money(p.amount) + "/mo" + (p.months ? " × " + p.months : ""); }).join(" → ");
+  }
+  function planLine(plan, pending) {
+    if (pending) return pendingLine(pending);
     if (!plan || !plan.length) return "No plan yet";
     return plan.map(function (p) { return money(p.amount) + "/mo" + (p.ongoing ? "" : " × " + monthsBetween(p.start, p.end)); }).join(" → ");
   }
@@ -266,6 +284,7 @@
   function statusPill(c) {
     if (c.failed) return ["Payment failed", "bad"];
     if (c.owed) return ["Owes " + money(c.owed), "warn"];
+    if (c.pending) return c.pending.due < todayCentral() ? ["First payment overdue", "bad"] : ["Awaiting first payment", "warn"];
     if (!c.plan.length) return ["No plan", "muted"];
     if (!c.autopay) return ["No autopay", "warn"];
     return ["Autopay on", "ok"];
@@ -283,7 +302,7 @@
       }, [
         el("span", { class: "nm", text: c.name }),
         el("span", { class: "pill " + p[1], text: p[0] }),
-        el("span", { class: "sub", text: planLine(c.plan) }),
+        el("span", { class: "sub", text: planLine(c.plan, c.pending) }),
       ])]));
     });
   }
@@ -325,6 +344,8 @@
     ]));
 
     box.appendChild(el("div", { class: "tiles" }, [
+      a.pending ? tile("First payment", money(a.pending.first), (a.pending.due < todayCentral() ? "Was due " : "Due by ") + dueText(a.pending.due) +
+        " · you keep ≈ " + money(keep(a.pending.first, "bank")) + " by bank") :
       tile("Next charge", a.nextCharge ? money(a.nextCharge.amount) : "—", a.nextCharge
         ? date(a.nextCharge.date) + " · you keep ≈ " + money(keep(a.nextCharge.amount, methodOf(a) || "bank")) + (methodOf(a) ? "" : " by bank")
         : "Nothing scheduled"),
@@ -333,7 +354,7 @@
     ]));
 
     box.appendChild(accessSection(a));
-    box.appendChild(a.plan.length ? planSection(a) : designerSection(a));
+    box.appendChild(a.pending ? pendingSection(a) : a.plan.length ? planSection(a) : designerSection(a));
     box.appendChild(requestSection(a));
     box.appendChild(invoicesSection(a));
   }
@@ -371,29 +392,8 @@
     ]);
   }
 
-  /* Existing plan + add-ons */
-  function planSection(a) {
-    var now = Date.now() / 1000;
-    var phases = el("ul", { class: "phases" });
-    a.plan.forEach(function (p) {
-      var when = p.ongoing ? "From " + monthYear(p.start) + ", ongoing"
-        : monthYear(p.start) + " – " + monthYear(p.end - 86400) + " · " + monthsBetween(p.start, p.end) + " months · " + money(p.amount * monthsBetween(p.start, p.end)) + " total";
-      var tag = p.current || (p.ongoing && p.start <= now) ? ["Now", "ok"] : p.start > now ? ["Later", "muted"] : ["Done", "muted"];
-      phases.appendChild(el("li", {}, [
-        el("span", { class: "amt num", text: money(p.amount) + " / month" }),
-        el("span", { class: "pill " + tag[1], text: tag[0] }),
-        el("span", { class: "when", text: when }),
-        el("span", { class: "items", text: (p.items || []).map(function (it) { return it.name + " " + money(it.amount); }).join(" + ") }),
-        el("span", { class: "net", text: keepText(p.amount, "subscription", methodOf(a), "/mo") +
-          (p.ongoing || !p.end ? "" : " · ≈ " + money(keep(p.amount, methodOf(a) || "bank") * monthsBetween(p.start, p.end)) + " over " + monthsBetween(p.start, p.end) + " months" + (methodOf(a) ? "" : " by bank")) }),
-      ]));
-    });
-
-    // Distinct items still billed in current/future phases.
-    var seen = {}, billed = [];
-    a.plan.filter(function (p) { return p.ongoing || !p.end || p.end > now; }).forEach(function (p) {
-      (p.items || []).forEach(function (it) { if (!seen[it.product]) { seen[it.product] = 1; billed.push(it); } });
-    });
+  /* Billed items (remove) + add-on form, shared by running and waiting plans */
+  function itemControls(a, billed, hint) {
     var msg = el("p", { class: "msg err", role: "alert" });
     var confirmBox = el("div", {});
     var list = el("ul", { class: "billed" });
@@ -437,14 +437,102 @@
       el("label", { class: "f", style: "flex:1 1 90px" }, ["$ per month", amt]),
       addBtn,
     ]);
+    return [
+      el("h3", { style: "font-size:1.05rem;margin-top:6px", text: "Billed items" }),
+      el("p", { class: "hint", text: hint }),
+      list, confirmBox, addForm, addNet, msg,
+    ];
+  }
 
+  /* Cancel a plan before anything has been charged */
+  function cancelControl(a, question) {
+    var msg = el("p", { class: "msg err", role: "alert" });
+    var box = el("div", {});
+    var btn = el("button", { class: "link bad", type: "button", text: "Cancel this plan", onclick: function () {
+      box.textContent = "";
+      box.appendChild(el("div", { class: "confirm" }, [
+        el("p", { text: question }),
+        el("div", { class: "row" }, [
+          el("button", { class: "btn danger small", type: "button", text: "Cancel plan", onclick: async function (e) {
+            e.currentTarget.disabled = true;
+            var r = await api("/api/admin/client", { id: a.id, action: "plan-cancel" });
+            if (!r.ok) { msg.textContent = r.data.error || "Failed."; box.textContent = ""; return; }
+            openClient(a.id); loadList();
+          } }),
+          el("button", { class: "btn ghost small", type: "button", text: "Keep it", onclick: function () { box.textContent = ""; } }),
+        ]),
+      ]));
+    } });
+    return el("div", { style: "display:flex;flex-direction:column;gap:8px;margin-top:4px" }, [el("div", {}, [btn]), box, msg]);
+  }
+
+  /* Plan that starts when the client makes the first payment */
+  function pendingSection(a) {
+    var pd = a.pending;
+    var overdue = pd.due < todayCentral();
+    var phases = el("ul", { class: "phases" });
+    pd.phases.forEach(function (p, i) {
+      var when = i === 0
+        ? (p.ongoing ? "Monthly from the day they pay" : p.months + " months from the day they pay · " + money(p.amount * p.months) + " total")
+        : (p.ongoing ? "After that, ongoing" : "Then " + p.months + " months · " + money(p.amount * p.months) + " total");
+      phases.appendChild(el("li", {}, [
+        el("span", { class: "amt num", text: money(p.amount) + " / month" }),
+        el("span", { class: "pill " + (i === 0 ? "warn" : "muted"), text: i === 0 ? "Waiting" : "Later" }),
+        el("span", { class: "when", text: when }),
+        el("span", { class: "items", text: p.items.map(function (it) { return it.name + " " + money(it.amount); }).join(" + ") }),
+        el("span", { class: "net", text: keepText(p.amount, "subscription", null, "/mo") +
+          (p.ongoing ? "" : " · ≈ " + money(keep(p.amount, "bank") * p.months) + " over " + p.months + " months by bank") }),
+      ]));
+    });
+    var seen = {}, billed = [];
+    pd.phases.forEach(function (p) { p.items.forEach(function (it) { if (!seen[it.product]) { seen[it.product] = 1; billed.push(it); } }); });
+
+    return el("section", { class: "panel sec" }, [
+      el("div", { class: "row", style: "justify-content:space-between;align-items:center" }, [
+        el("h2", { text: "Plan" }),
+        el("span", { class: "pill " + (overdue ? "bad" : "warn"), text: (overdue ? "First payment overdue · was due " : "Awaiting first payment · due ") + dueText(pd.due) }),
+      ]),
+      el("p", { class: "hint", text: "Nothing is charged until " + a.client.name + " pays the first " + money(pd.first) +
+        " at /payments. The plan starts that day and each later month is charged automatically on the same date. Send the invite so they get the link." }),
+      phases,
+    ].concat(itemControls(a, billed, "Add-ons apply to every phase of this plan."), [
+      feeNote("subscription"),
+      cancelControl(a, "Cancel this plan? Nothing has been charged, so nothing is refunded. You can design a new one afterwards."),
+    ]));
+  }
+
+  /* Existing plan + add-ons */
+  function planSection(a) {
+    var now = Date.now() / 1000;
+    var phases = el("ul", { class: "phases" });
+    a.plan.forEach(function (p) {
+      var when = p.ongoing ? "From " + monthYear(p.start) + ", ongoing"
+        : monthYear(p.start) + " – " + monthYear(lastCharge(p.start, monthsBetween(p.start, p.end))) + " · " + monthsBetween(p.start, p.end) + " months · " + money(p.amount * monthsBetween(p.start, p.end)) + " total";
+      var tag = p.current || (p.ongoing && p.start <= now) ? ["Now", "ok"] : p.start > now ? ["Later", "muted"] : ["Done", "muted"];
+      phases.appendChild(el("li", {}, [
+        el("span", { class: "amt num", text: money(p.amount) + " / month" }),
+        el("span", { class: "pill " + tag[1], text: tag[0] }),
+        el("span", { class: "when", text: when }),
+        el("span", { class: "items", text: (p.items || []).map(function (it) { return it.name + " " + money(it.amount); }).join(" + ") }),
+        el("span", { class: "net", text: keepText(p.amount, "subscription", methodOf(a), "/mo") +
+          (p.ongoing || !p.end ? "" : " · ≈ " + money(keep(p.amount, methodOf(a) || "bank") * monthsBetween(p.start, p.end)) + " over " + monthsBetween(p.start, p.end) + " months" + (methodOf(a) ? "" : " by bank")) }),
+      ]));
+    });
+
+    // Distinct items still billed in current/future phases.
+    var seen = {}, billed = [];
+    a.plan.filter(function (p) { return p.ongoing || !p.end || p.end > now; }).forEach(function (p) {
+      (p.items || []).forEach(function (it) { if (!seen[it.product]) { seen[it.product] = 1; billed.push(it); } });
+    });
+
+    var notStarted = a.schedule && a.schedule.status === "not_started";
     return el("section", { class: "panel sec" }, [
       el("h2", { text: "Plan" }),
       phases,
-      el("h3", { style: "font-size:1.05rem;margin-top:6px", text: "Billed items" }),
-      el("p", { class: "hint", text: "Adding or removing an item changes this month forward and every later phase. Nothing is prorated." }),
-      list, confirmBox, addForm, addNet, msg, feeNote("subscription"),
-    ]);
+    ].concat(itemControls(a, billed, "Adding or removing an item changes this month forward and every later phase. Nothing is prorated."), [
+      feeNote("subscription"),
+      notStarted ? cancelControl(a, "Cancel this plan before its first charge on " + (a.plan[0] ? date(a.plan[0].start) : "the start date") + "? Nothing has been charged yet.") : null,
+    ]));
   }
 
   /* Plan designer for a client with no plan */
@@ -466,7 +554,21 @@
       { name: "Website build & care", amount: "250", months: "18", ongoing: false },
       { name: "Hosting & maintenance", amount: "140", months: "", ongoing: true },
     ];
+    var mode = "pay"; // "pay": starts when they pay (first payment due by date); "date": fixed start date
     var start = el("input", { class: "i", type: "date", id: "pd-start", value: firstOfNextMonth() });
+    var startLabel = el("span", { text: "First payment due by" });
+    function modeRadio(value, label, detail) {
+      return el("label", { class: "modeopt" }, [
+        el("input", { type: "radio", name: "pd-mode", value: value, checked: value === mode, onchange: function () {
+          mode = value; startLabel.textContent = mode === "pay" ? "First payment due by" : "First charge on"; update();
+        } }),
+        el("span", {}, [el("strong", { text: label }), el("span", { class: "hint", text: detail })]),
+      ]);
+    }
+    var modes = el("div", { class: "modes" }, [
+      modeRadio("pay", "Starts when they pay", "They pay the first month at /payments by the due date; the plan starts that day and later months charge automatically."),
+      modeRadio("date", "Starts on a fixed date", "Charged automatically on the date you pick. Autopay must be set up before then."),
+    ]);
     var list = el("div", { style: "display:flex;flex-direction:column;gap:8px" });
     var preview = el("div", { class: "preview" });
     var msg = el("p", { class: "msg err", role: "alert" });
@@ -503,16 +605,18 @@
         if (!(c >= 100)) return { error: "Phase " + (i + 1) + " needs an amount." };
         if (firstAmount === null) firstAmount = c;
         if (r.ongoing) {
-          lines.push("then " + money(c) + "/mo ongoing from " + fmtMonth(addMonths(s, offset)));
-          phases.push({ label: money(c) + "/mo ongoing from " + fmtMonth(addMonths(s, offset)), amount: c, months: null });
+          var ol = mode === "pay" ? money(c) + "/mo ongoing" + (i ? " after that" : "") : money(c) + "/mo ongoing from " + fmtMonth(addMonths(s, offset));
+          lines.push((i ? "then " : "") + ol);
+          phases.push({ label: ol, amount: c, months: null });
           break;
         }
         var m = Number(r.months);
         if (!(Number.isInteger(m) && m >= 1 && m <= 60)) return { error: "Phase " + (i + 1) + " needs 1 to 60 months." };
-        lines.push((i ? "then " : "") + money(c) + "/mo × " + m + " (" + fmtMonth(addMonths(s, offset)) + " – " + fmtMonth(addMonths(s, offset + m - 1)) + ") = " + money(c * m));
-        phases.push({ label: money(c) + "/mo × " + m + " (" + fmtMonth(addMonths(s, offset)) + " – " + fmtMonth(addMonths(s, offset + m - 1)) + ")", amount: c, months: m });
+        var range = mode === "pay" ? "" : " (" + fmtMonth(addMonths(s, offset)) + " – " + fmtMonth(addMonths(s, offset + m - 1)) + ")";
+        lines.push((i ? "then " : "") + money(c) + "/mo × " + m + range + " = " + money(c * m));
+        phases.push({ label: money(c) + "/mo × " + m + range, amount: c, months: m });
         total += c * m; offset += m;
-        if (i === rows.length - 1) lines.push("then the plan ends (" + fmtMonth(addMonths(s, offset)) + ")");
+        if (i === rows.length - 1) lines.push("then the plan ends" + (mode === "pay" ? "" : " (" + fmtMonth(addMonths(s, offset)) + ")"));
       }
       return { lines: lines, phases: phases, total: total, first: firstAmount };
     }
@@ -521,7 +625,10 @@
       var sm = summary();
       preview.textContent = "";
       if (sm.error) { preview.appendChild(el("span", { text: sm.error })); return; }
-      preview.appendChild(el("strong", { text: "Starts " + new Date(start.value + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) + ". " }));
+      var dayLabel = new Date(start.value + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+      preview.appendChild(el("strong", { text: mode === "pay"
+        ? "First payment of " + money(sm.first) + " due by " + dayLabel + "; the plan starts the day they pay. "
+        : "Starts " + dayLabel + ". " }));
       preview.appendChild(document.createTextNode(sm.lines.join(", ") + "." + (sm.total ? " Fixed-term total " + money(sm.total) + "." : "")));
 
       // Admin-only: what I keep after Stripe fees, per phase and for the fixed term.
@@ -558,12 +665,14 @@
       confirmBox.textContent = "";
       var rq = rid();
       confirmBox.appendChild(el("div", { class: "confirm" }, [
-        el("p", { text: "Create this plan for " + a.client.name + "? " + (a.autopay ? "Autopay is set up, so " + money(sm.first) + " will be charged on the start date." : "Autopay isn't set up yet; the first charge on the start date will fail unless they set it up first.") }),
+        el("p", { text: mode === "pay"
+          ? "Save this plan for " + a.client.name + "? Nothing is charged until they pay the first " + money(sm.first) + " at /payments. Afterwards, email them the invite so they get the link."
+          : "Create this plan for " + a.client.name + "? " + (a.autopay ? "Autopay is set up, so " + money(sm.first) + " will be charged on the start date." : "Autopay isn't set up yet; the first charge on the start date will fail unless they set it up first.") }),
         el("div", { class: "row" }, [
-          el("button", { class: "btn", type: "button", text: "Create plan", onclick: async function (e) {
+          el("button", { class: "btn", type: "button", text: mode === "pay" ? "Save plan" : "Create plan", onclick: async function (e) {
             e.currentTarget.disabled = true;
             var r = await api("/api/admin/client", {
-              id: a.id, action: "plan", start: start.value, requestId: rq,
+              id: a.id, action: "plan", mode: mode, start: start.value, requestId: rq,
               phases: rows.map(function (x) { return { name: x.name, amount: x.amount.replace(/[$,\s]/g, ""), months: Number(x.months), ongoing: x.ongoing }; }),
             });
             if (!r.ok) { msg.textContent = r.data.error || "Failed."; confirmBox.textContent = ""; return; }
@@ -577,8 +686,9 @@
     draw();
     return el("section", { class: "panel sec designer" }, [
       el("h2", { text: "Design a plan" }),
-      el("p", { class: "hint", text: "Charges happen automatically on the start day each month. Phases run back to back; the last one can continue indefinitely." }),
-      el("div", { class: "row" }, [el("label", { class: "f", style: "flex:0 1 200px" }, ["First charge on", start])]),
+      el("p", { class: "hint", text: "Phases run back to back; the last one can continue indefinitely. Each month is charged automatically on the day the plan started." }),
+      modes,
+      el("div", { class: "row" }, [el("label", { class: "f", style: "flex:0 1 200px" }, [startLabel, start])]),
       list,
       el("div", {}, [el("button", { class: "link", type: "button", text: "+ Add a phase", onclick: function () {
         rows.forEach(function (r) { if (r.ongoing) { r.ongoing = false; if (!r.months) r.months = "12"; } });

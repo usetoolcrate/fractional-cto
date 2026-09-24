@@ -1,10 +1,13 @@
 // One client: GET ?id=cus_… for details; POST { id, action, … } to act on them.
 // Actions: code (new sign-in code, optionally emailed), plan (create a phased
-// plan), addon-add / addon-remove, request (one-off invoice Stripe emails).
+// plan: starts on a fixed date, or when the client makes the first payment),
+// plan-cancel (only before any charge), addon-add / addon-remove, request
+// (one-off invoice Stripe emails).
 import { loadAccount } from "../_lib/account.mjs";
 import { guard, readJson } from "../_lib/admin.mjs";
 import { centralMidnight, monthlyPrice, productNames, todayCentral } from "../_lib/billing.mjs";
 import { generateCode, hashCode } from "../_lib/codes.mjs";
+import { decodePending, encodePending, newPendingId, reconcilePending } from "../_lib/plans.mjs";
 import { inviteEmail, sendEmail } from "../_lib/email.mjs";
 import { json } from "../_lib/session.mjs";
 import { adminStripe, dashboardUrl, isTestMode } from "../_lib/stripe.mjs";
@@ -18,12 +21,17 @@ export async function GET(request) {
   const id = new URL(request.url).searchParams.get("id");
   if (!validId(id)) return json({ error: "Unknown client" }, 400);
   try {
-    const [account, names] = await Promise.all([loadAccount(id, { admin: true, detail: true }), productNames()]);
+    let [account, names] = await Promise.all([loadAccount(id, { admin: true, detail: true }), productNames()]);
     if (!account) return json({ error: "That client was deleted in Stripe." }, 404);
+    if (account.needsReconcile) {
+      await reconcilePending(id, account.customer);
+      account = await loadAccount(id, { admin: true, detail: true });
+    }
     const named = (items = []) => items.map((it) => ({ ...it, name: names[it.product] || "Item" }));
     account.plan = account.plan.map((p) => ({ ...p, items: named(p.items) }));
     if (account.subscription) account.subscription.items = named(account.subscription.items);
-    const { customer, ...visible } = account;
+    if (account.pending) account.pending.phases = account.pending.phases.map((p) => ({ ...p, items: named(p.items) }));
+    const { customer, needsReconcile, ...visible } = account;
     return json({ testMode: isTestMode(), dashboard: dashboardUrl(`customers/${id}`), ...visible });
   } catch (err) {
     console.error("client load failed", err.message);
@@ -44,6 +52,8 @@ export async function POST(request) {
         return await issueCode(body, idem);
       case "plan":
         return await createPlan(body, idem);
+      case "plan-cancel":
+        return await cancelPlan(body);
       case "addon-add":
         return await changeAddon(body, "add");
       case "addon-remove":
@@ -79,6 +89,7 @@ async function issueCode({ id, send }, idem) {
     code,
     nextCharge: account?.nextCharge,
     hasAutopay: Boolean(account?.autopay),
+    pending: account?.pending,
   });
   try {
     await sendEmail({ to: customer.email, ...mail, idempotencyKey: idem("invite") });
@@ -90,16 +101,17 @@ async function issueCode({ id, send }, idem) {
   return json({ code, emailed: true, to: customer.email });
 }
 
-async function createPlan({ id, start, phases }, idem) {
+async function createPlan({ id, start, phases, mode }, idem) {
   const account = await loadAccount(id, { admin: true, detail: true });
-  if (account?.schedule || account?.subscription) {
-    return json({ error: "This client already has a plan. Use add-ons, or change it in the Stripe dashboard." }, 409);
+  if (account?.schedule || account?.subscription || account?.pending) {
+    return json({ error: "This client already has a plan. Use add-ons, cancel it first, or change it in the Stripe dashboard." }, 409);
   }
   if (!Array.isArray(phases) || phases.length < 1 || phases.length > 6) return json({ error: "A plan needs 1 to 6 phases." }, 400);
+  const payToStart = mode === "pay";
   const today = todayCentral();
-  if (!start || start < today) return json({ error: "Pick a start date of today or later." }, 400);
+  if (!start || start < today) return json({ error: payToStart ? "Pick a due date of today or later." : "Pick a start date of today or later." }, 400);
   const startDate = start === today ? "now" : centralMidnight(start);
-  if (!startDate) return json({ error: "That start date isn't valid." }, 400);
+  if (!startDate) return json({ error: "That date isn't valid." }, 400);
 
   const clean = [];
   for (const [i, p] of phases.entries()) {
@@ -114,6 +126,19 @@ async function createPlan({ id, start, phases }, idem) {
       return json({ error: `Phase ${i + 1} needs 1 to 60 months.` }, 400);
     }
     clean.push({ name, amount, ongoing, months: ongoing ? 1 : months });
+  }
+
+  if (payToStart) {
+    // Nothing is charged yet: the plan waits in metadata for the first payment.
+    const p = [];
+    for (const ph of clean) {
+      const price = await monthlyPrice(ph.name, ph.amount);
+      p.push({ i: [[price.id, ph.amount, typeof price.product === "string" ? price.product : price.product.id]], m: ph.ongoing ? 0 : ph.months });
+    }
+    await adminStripe("POST", `customers/${id}`, {
+      metadata: { pending_plan: encodePending({ id: newPendingId(), due: start, p }) },
+    });
+    return json({ ok: true, pending: true }, 201);
   }
 
   const built = [];
@@ -145,7 +170,7 @@ const itemPrice = (it) => (typeof it.price === "object" ? it.price.id : it.price
 
 async function changeAddon({ id, name, amount, product }, mode) {
   const account = await loadAccount(id, { admin: true, detail: true });
-  if (!account?.schedule && !account?.subscription) return json({ error: "Create a plan first." }, 409);
+  if (!account?.schedule && !account?.subscription && !account?.pending) return json({ error: "Create a plan first." }, 409);
 
   let price = null;
   if (mode === "add") {
@@ -159,7 +184,19 @@ async function changeAddon({ id, name, amount, product }, mode) {
     return json({ error: "Unknown add-on" }, 400);
   }
 
-  if (account.schedule) {
+  if (account.pending) {
+    const pending = decodePending(account.customer.metadata?.pending_plan);
+    if (mode === "add") {
+      if (pending.p.every((ph) => ph.i.some((it) => it[2] === product))) return json({ error: "That add-on is already on this plan." }, 409);
+      for (const ph of pending.p) if (!ph.i.some((it) => it[2] === product)) ph.i.push([price.id, price.unit_amount, product]);
+    } else {
+      for (const ph of pending.p) ph.i = ph.i.filter((it) => it[2] !== product);
+      if (pending.p.some((ph) => ph.i.length === 0)) {
+        return json({ error: "That would leave a phase with nothing to bill. Cancel the plan and design it again instead." }, 409);
+      }
+    }
+    await adminStripe("POST", `customers/${id}`, { metadata: { pending_plan: encodePending(pending) } });
+  } else if (account.schedule) {
     // Resend every current and future phase in one update; anything left out is unset.
     const s = await adminStripe("GET", `subscription_schedules/${account.schedule.id}`, { expand: ["phases.items.price"] });
     const now = Math.floor(Date.now() / 1000);
@@ -196,6 +233,21 @@ async function changeAddon({ id, name, amount, product }, mode) {
     }
   }
   return json({ ok: true });
+}
+
+// Only before anything has been charged: a plan waiting for its first payment,
+// or a fixed-date plan that hasn't started. Running plans are changed in Stripe.
+async function cancelPlan({ id }) {
+  const account = await loadAccount(id, { admin: true, detail: true });
+  if (account?.pending) {
+    await adminStripe("POST", `customers/${id}`, { metadata: { pending_plan: "" } });
+    return json({ ok: true });
+  }
+  if (account?.schedule?.status === "not_started") {
+    await adminStripe("POST", `subscription_schedules/${account.schedule.id}/cancel`, {});
+    return json({ ok: true });
+  }
+  return json({ error: "This plan has already started. Cancel it in the Stripe dashboard so you can choose what happens to the current month." }, 409);
 }
 
 async function paymentRequest({ id, amount, description, daysUntilDue }, idem) {
