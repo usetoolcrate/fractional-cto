@@ -97,8 +97,16 @@ export async function GET(request) {
       invoices.data
         .filter((inv) => inv.status === "open" && (inv.attempt_count ?? 0) > 0)
         .map(async (inv) => {
-          const pays = await stripe("GET", "invoice_payments", { invoice: inv.id, expand: ["data.payment.payment_intent"] });
-          if (pays.data.some((p) => p.payment?.payment_intent?.status === "processing")) processing.add(inv.id);
+          try {
+            const pays = await stripe("GET", "invoice_payments", { invoice: inv.id, expand: ["data.payment.payment_intent"] });
+            if (pays.data.some((p) => p.payment?.payment_intent?.status === "processing")) processing.add(inv.id);
+          } catch (err) {
+            // Can't tell (e.g. the key lacks PaymentIntents: Read). Don't invite a
+            // second payment for something that may be clearing; Stripe emails
+            // the client if it actually failed.
+            console.error("invoice_payments lookup failed", inv.id, err.message);
+            processing.add(inv.id);
+          }
         }),
     );
 
