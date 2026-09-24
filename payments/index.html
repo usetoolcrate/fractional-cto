@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Client Payments — Alexander Schottky</title>
+<meta name="description" content="Sign in to see your invoices and manage autopay.">
+<meta name="robots" content="noindex, nofollow">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://schottky.com/payments">
+<meta property="og:title" content="Client Payments — Alexander Schottky">
+<meta property="og:description" content="Sign in to see your invoices and manage autopay.">
+<meta property="og:image" content="https://schottky.com/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Client Payments — Alexander Schottky">
+<meta name="twitter:description" content="Sign in to see your invoices and manage autopay.">
+<meta name="twitter:image" content="https://schottky.com/og-image.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/assets/favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper:#faf8f4;
+    --paper-deep:#f1ede5;
+    --ink:#1c1e21;
+    --ink-soft:#4a4f56;
+    --ink-faint:#8a8f96;
+    --accent:#1f5c48;
+    --accent-bright:#2b7a5f;
+    --accent-tint:#e7f0ec;
+    --brass:#b0812f;
+    --brass-tint:#f6eedf;
+    --alert:#a2402e;
+    --alert-tint:#f8e9e5;
+    --line:#e2dcd0;
+    --card:#ffffff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:'Inter',-apple-system,sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.6;
+    font-size:16px;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:'Newsreader',Georgia,serif;font-weight:500;line-height:1.15;letter-spacing:-0.01em;text-wrap:balance}
+  a{color:var(--accent)}
+  a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent-bright);outline-offset:2px}
+  [hidden]{display:none !important}
+
+  header{border-bottom:1px solid var(--line);background:var(--paper)}
+  .bar{max-width:880px;margin:0 auto;padding-inline:24px;height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .logo{font-family:'Newsreader',serif;font-size:1.2rem;font-weight:600;color:var(--ink);text-decoration:none}
+  .logo span{color:var(--accent)}
+  .bar-label{font-size:.85rem;font-weight:500;color:var(--ink-soft)}
+
+  main{max-width:880px;margin:0 auto;padding-inline:24px;padding-block:48px 72px;display:flex;flex-direction:column;gap:40px}
+  .eyebrow{font-size:.75rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint)}
+  .test-pill{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--brass);background:var(--brass-tint);border:1px solid #e8d7b6;padding:3px 9px;border-radius:999px}
+
+  .btn{
+    font:inherit;font-weight:600;font-size:.95rem;
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--accent);color:#fff;border:0;border-radius:6px;
+    padding:12px 22px;cursor:pointer;text-decoration:none;transition:background .15s ease;
+  }
+  .btn:hover{background:var(--accent-bright)}
+  .btn:disabled{opacity:.6;cursor:default}
+  .btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+  .btn.ghost:hover{background:var(--accent-tint)}
+  .linkbtn{font:inherit;font-size:.9rem;background:none;border:0;color:var(--ink-soft);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:0}
+  .linkbtn:hover{color:var(--ink)}
+
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:.85rem;font-weight:600;color:var(--ink-soft)}
+  .field input{
+    font:inherit;font-size:1rem;color:var(--ink);background:var(--card);
+    border:1px solid var(--line);border-radius:6px;padding:12px 14px;width:100%;
+  }
+  .field input:focus{border-color:var(--accent)}
+  #code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase}
+  .row{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+  .row .field{flex:1 1 240px}
+  .row .btn{align-self:flex-end}
+  .msg{font-size:.92rem;min-height:1.4em}
+  .msg.err{color:var(--alert)}
+  .msg.ok{color:var(--accent)}
+  .tile .msg:empty{display:none}
+
+  /* Sign-in */
+  .signin{max-width:520px;display:flex;flex-direction:column;gap:28px}
+  .signin h1{font-size:clamp(2.1rem,5vw,2.8rem)}
+  .signin .lede{color:var(--ink-soft);font-size:1.05rem}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:14px}
+  .panel h2{font-size:1.25rem}
+  .panel .hint{font-size:.88rem;color:var(--ink-soft)}
+  .divider{display:flex;align-items:center;gap:12px;color:var(--ink-faint);font-size:.85rem}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  /* Account */
+  .acct-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+  .acct-head h1{font-size:clamp(2rem,5vw,2.6rem);margin-top:4px}
+  .acct-head .meta{color:var(--ink-soft);font-size:.92rem}
+  .summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:8px}
+  .tile .big{font-family:'Newsreader',serif;font-size:2rem;line-height:1.1;font-variant-numeric:tabular-nums}
+  .tile .sub{color:var(--ink-soft);font-size:.92rem}
+  .tile .actions{margin-top:auto;padding-top:8px;display:flex;gap:10px;flex-wrap:wrap}
+  .tile.warn{border-color:#e8d7b6;background:var(--brass-tint)}
+  .autopay-label{font-weight:600;font-size:1.05rem}
+
+  .sec{display:flex;flex-direction:column;gap:14px}
+  .sec h2{font-size:1.5rem}
+  .plan{list-style:none;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+  .plan li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;padding:16px 20px;border-bottom:1px solid var(--line);align-items:baseline}
+  .plan li:last-child{border-bottom:0}
+  .plan .amt{font-weight:600;font-variant-numeric:tabular-nums}
+  .plan .when{color:var(--ink-soft);font-size:.92rem}
+  .plan .tag{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);background:var(--accent-tint);padding:3px 8px;border-radius:999px;justify-self:end}
+  .plan .tag.later{color:var(--ink-faint);background:var(--paper-deep)}
+  .plan .tag.done{color:var(--ink-faint);background:transparent;border:1px solid var(--line)}
+
+  .inv{border:1px solid var(--line);border-radius:10px;background:var(--card);overflow:hidden}
+  .inv-row{display:grid;grid-template-columns:9rem minmax(0,1fr) 7rem 8.5rem 8rem;gap:12px;align-items:center;padding:13px 20px;border-bottom:1px solid var(--line);font-size:.95rem}
+  .inv-row:last-child{border-bottom:0}
+  .inv-head{background:var(--paper-deep);font-size:.75rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);padding-block:10px}
+  .inv-num{color:var(--ink-soft);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85rem;overflow-wrap:anywhere}
+  .inv-amt{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+  .inv-links{display:flex;gap:14px;justify-content:flex-end;font-size:.9rem}
+  .pill{justify-self:start;font-size:.78rem;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap}
+  .pill.paid{color:var(--accent);background:var(--accent-tint)}
+  .pill.due{color:#8a6320;background:var(--brass-tint)}
+  .pill.failed{color:var(--alert);background:var(--alert-tint)}
+  .pill.other{color:var(--ink-soft);background:var(--paper-deep)}
+  .empty{padding:22px 20px;color:var(--ink-soft)}
+
+  .fineprint{font-size:.88rem;color:var(--ink-soft);border-top:1px solid var(--line);padding-top:20px}
+  .toast{background:var(--accent-tint);color:var(--accent);border:1px solid #c9ddd4;border-radius:8px;padding:12px 16px;font-weight:500}
+  .loading{color:var(--ink-soft)}
+
+  @media (max-width:680px){
+    main{padding-block:32px 56px;gap:32px}
+    .bar,main{padding-inline:16px}
+    .summary{grid-template-columns:minmax(0,1fr)}
+    .inv-head{display:none}
+    .inv-row{grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:14px 16px}
+    .inv-date{font-weight:600}
+    .inv-num{grid-column:1}
+    .inv-amt{grid-row:1;grid-column:2}
+    .pill{grid-row:2;grid-column:2;justify-self:end}
+    .inv-links{grid-column:1 / -1;justify-content:flex-start;padding-top:4px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <a class="logo" href="/">Alexander <span>Schottky</span></a>
+    <span class="bar-label">Client payments</span>
+  </div>
+</header>
+
+<main>
+  <p class="loading" id="loading">Loading…</p>
+
+  <!-- Signed out -->
+  <section class="signin" id="signin" hidden>
+    <div>
+      <span class="test-pill" data-test hidden>Test mode · no real charges</span>
+      <h1>Client payments</h1>
+    </div>
+    <p class="lede">Sign in to see your invoices and set up or change autopay.</p>
+
+    <form class="panel" id="code-form" novalidate>
+      <h2>Sign in with your client code</h2>
+      <div class="row">
+        <div class="field">
+          <label for="code">Client code</label>
+          <input id="code" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC-12345-67890" required>
+        </div>
+        <button class="btn" type="submit" id="code-btn">Sign in</button>
+      </div>
+      <p class="msg err" id="code-msg" role="alert"></p>
+    </form>
+
+    <div class="divider" id="email-divider" hidden>or, if you don't have your code</div>
+
+    <form class="panel" id="email-form" novalidate hidden>
+      <h2>Get a sign-in link by email</h2>
+      <p class="hint">Stripe, my payment processor, will email you a secure link to your billing page, where you can see invoices and update your payment method.</p>
+      <div class="row">
+        <div class="field">
+          <label for="email">Email address</label>
+          <input id="email" name="email" type="email" autocomplete="email" placeholder="you@yourbusiness.com" required>
+        </div>
+        <button class="btn ghost" type="submit">Email me a link</button>
+      </div>
+      <p class="msg err" id="email-msg" role="alert"></p>
+    </form>
+  </section>
+
+  <!-- Signed in -->
+  <div id="account" hidden>
+    <div style="display:flex;flex-direction:column;gap:40px">
+      <div class="acct-head">
+        <div>
+          <span class="test-pill" data-test hidden>Test mode · no real charges</span>
+          <p class="eyebrow" style="margin-top:8px">Signed in</p>
+          <h1 id="client-name"></h1>
+          <p class="meta" id="client-email"></p>
+        </div>
+        <button class="linkbtn" type="button" id="signout">Sign out</button>
+      </div>
+
+      <p class="toast" id="toast" role="status" hidden></p>
+
+      <div class="summary">
+        <div class="tile" id="next-tile">
+          <p class="eyebrow">Next charge</p>
+          <p class="big" id="next-amount"></p>
+          <p class="sub" id="next-when"></p>
+        </div>
+        <div class="tile" id="autopay-tile">
+          <p class="eyebrow">Autopay</p>
+          <p class="autopay-label" id="autopay-label"></p>
+          <p class="sub" id="autopay-sub"></p>
+          <div class="actions">
+            <button class="btn" type="button" id="manage-btn">Set up autopay</button>
+          </div>
+          <p class="msg err" id="manage-msg" role="alert"></p>
+        </div>
+      </div>
+
+      <section class="sec" id="plan-sec" aria-labelledby="plan-h">
+        <h2 id="plan-h">Your plan</h2>
+        <ul class="plan" id="plan"></ul>
+      </section>
+
+      <section class="sec" aria-labelledby="inv-h">
+        <h2 id="inv-h">Invoices</h2>
+        <div class="inv" id="invoices"></div>
+      </section>
+
+      <p class="fineprint">Payments are processed securely by Stripe. I never see or store your card or bank details. Questions about a charge? Email me at <a href="mailto:alex@schottky.com">alex@schottky.com</a>.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+(function () {
+  var TZ = "America/Chicago";
+  var $ = function (id) { return document.getElementById(id); };
+  var money = function (cents) {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((cents || 0) / 100);
+  };
+  var date = function (sec, opts) {
+    return new Date(sec * 1000).toLocaleDateString("en-US", Object.assign({ timeZone: TZ }, opts || { month: "short", day: "numeric", year: "numeric" }));
+  };
+  var monthYear = function (sec) { return date(sec, { month: "short", year: "numeric" }); };
+
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      if (k === "text") node.textContent = attrs[k];
+      else node.setAttribute(k, attrs[k]);
+    });
+    (children || []).forEach(function (c) { if (c) node.appendChild(c); });
+    return node;
+  }
+
+  async function api(path, options) {
+    var res = await fetch(path, Object.assign({ credentials: "same-origin", headers: { "Content-Type": "application/json" } }, options || {}));
+    var data = null;
+    try { data = await res.json(); } catch (e) {}
+    return { ok: res.ok, status: res.status, data: data };
+  }
+
+  function show(which) {
+    $("loading").hidden = which !== "loading";
+    $("signin").hidden = which !== "signin";
+    $("account").hidden = which !== "account";
+  }
+
+  function markTest(on) {
+    document.querySelectorAll("[data-test]").forEach(function (n) { n.hidden = !on; });
+  }
+
+  // Months between two phase boundaries (both at midnight Central on the 1st).
+  function monthsBetween(a, b) {
+    var da = new Date(a * 1000), db = new Date(b * 1000);
+    return (db.getUTCFullYear() - da.getUTCFullYear()) * 12 + (db.getUTCMonth() - da.getUTCMonth());
+  }
+
+  function renderPlan(plan) {
+    var list = $("plan");
+    list.textContent = "";
+    $("plan-sec").hidden = !plan.length;
+    var now = Date.now() / 1000;
+    var anyNow = plan.some(function (p) { return p.current || (p.ongoing && p.start <= now); });
+    plan.forEach(function (p, i) {
+      var when;
+      if (p.ongoing) {
+        when = "From " + monthYear(p.start) + ", ongoing";
+      } else {
+        var n = monthsBetween(p.start, p.end);
+        when = monthYear(p.start) + " – " + monthYear(p.end - 86400) + " · " + n + (n === 1 ? " payment" : " payments");
+      }
+      var state = p.current || (p.ongoing && p.start <= now) ? ["Now", "tag"]
+        : p.start > now ? (!anyNow && i === 0 ? ["Next", "tag"] : ["Later", "tag later"])
+        : ["Done", "tag done"];
+      list.appendChild(el("li", {}, [
+        el("span", { class: "amt", text: money(p.amount) + " / " + (p.interval || "month") }),
+        el("span", { class: state[1], text: state[0] }),
+        el("span", { class: "when", text: when }),
+      ]));
+    });
+  }
+
+  function invoiceStatus(inv) {
+    if (inv.status === "paid") return ["Paid", "paid"];
+    if (inv.status === "open" && inv.processing) return ["Processing", "other"];
+    if (inv.status === "open") return inv.attempted ? ["Payment failed", "failed"] : ["Due", "due"];
+    if (inv.status === "uncollectible") return ["Unpaid", "failed"];
+    return [inv.status, "other"];
+  }
+
+  function renderInvoices(invoices, nextCharge) {
+    var box = $("invoices");
+    box.textContent = "";
+    if (!invoices.length) {
+      var first = nextCharge ? " Your first one will be created on " + date(nextCharge.date) + "." : "";
+      box.appendChild(el("p", { class: "empty", text: "No invoices yet." + first }));
+      return;
+    }
+    box.appendChild(el("div", { class: "inv-row inv-head", "aria-hidden": "true" }, [
+      el("span", { text: "For" }), el("span", { text: "Invoice" }), el("span", { text: "Amount", style: "text-align:right" }),
+      el("span", { text: "Status" }), el("span", { text: "", style: "text-align:right" }),
+    ]));
+    invoices.forEach(function (inv) {
+      var st = invoiceStatus(inv);
+      var links = el("span", { class: "inv-links" }, [
+        inv.url ? el("a", { href: inv.url, target: "_blank", rel: "noopener", text: inv.status === "open" && !inv.processing ? "Pay now" : "View" }) : null,
+        inv.pdf ? el("a", { href: inv.pdf, target: "_blank", rel: "noopener", text: "PDF" }) : null,
+      ]);
+      box.appendChild(el("div", { class: "inv-row" }, [
+        el("span", { class: "inv-date", text: date(inv.periodStart, { month: "long", year: "numeric" }) }),
+        el("span", { class: "inv-num", text: inv.number || "" }),
+        el("span", { class: "inv-amt", text: money(inv.total) }),
+        el("span", { class: "pill " + st[1], text: st[0] }),
+        links,
+      ]));
+    });
+  }
+
+  function renderAccount(a) {
+    markTest(a.testMode);
+    $("client-name").textContent = a.client.name;
+    $("client-email").textContent = a.client.email || "";
+
+    var owed = a.invoices.filter(function (i) { return i.status === "open" && !i.processing; });
+    var clearing = a.invoices.filter(function (i) { return i.processing; });
+    if (owed.length) {
+      var total = owed.reduce(function (s, i) { return s + i.remaining; }, 0);
+      $("next-tile").classList.add("warn");
+      $("next-tile").querySelector(".eyebrow").textContent = "Due now";
+      $("next-amount").textContent = money(total);
+      $("next-when").textContent = owed.length === 1 ? "One invoice is open. Use Pay now below, or fix autopay and it will retry." : owed.length + " invoices are open. Use Pay now below.";
+    } else if (a.nextCharge) {
+      $("next-amount").textContent = money(a.nextCharge.amount);
+      $("next-when").textContent = "On " + date(a.nextCharge.date) + (a.autopay ? ", charged automatically." : ".") +
+        (clearing.length ? " A bank payment of " + money(clearing[0].total) + " is still clearing; that takes a few business days." : "");
+    } else {
+      $("next-amount").textContent = "—";
+      $("next-when").textContent = "Nothing scheduled.";
+    }
+
+    if (a.autopay) {
+      $("autopay-label").textContent = a.autopay.label;
+      $("autopay-sub").textContent = a.autopay.kind === "bank"
+        ? "Charged automatically from your bank account each month."
+        : "Charged automatically each month. Paying from a bank account (ACH) is also an option.";
+      $("manage-btn").textContent = "Change payment method";
+      $("manage-btn").className = "btn ghost";
+      $("autopay-tile").classList.remove("warn");
+    } else {
+      $("autopay-label").textContent = "Not set up yet";
+      $("autopay-sub").textContent = "Add a bank account (ACH) or a card once, and each month's charge happens on its own.";
+      $("manage-btn").textContent = "Set up autopay";
+      $("manage-btn").className = "btn";
+      $("autopay-tile").classList.add("warn");
+    }
+
+    renderPlan(a.plan);
+    renderInvoices(a.invoices, a.nextCharge);
+    show("account");
+  }
+
+  var config = { emailLoginUrl: null, testMode: false };
+
+  async function load() {
+    var results = await Promise.all([api("/api/pay/config"), api("/api/pay/account")]);
+    if (results[0].ok) config = results[0].data;
+    var acct = results[1];
+    if (acct.ok) return renderAccount(acct.data);
+    markTest(config.testMode);
+    var hasEmail = !!config.emailLoginUrl;
+    $("email-form").hidden = !hasEmail;
+    $("email-divider").hidden = !hasEmail;
+    if (acct.status !== 401) $("code-msg").textContent = (acct.data && acct.data.error) || "Something went wrong loading your account.";
+    show("signin");
+  }
+
+  $("code-form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var code = $("code").value.trim();
+    var msg = $("code-msg");
+    msg.textContent = "";
+    if (!code) { msg.textContent = "Enter your client code."; $("code").focus(); return; }
+    $("code-btn").disabled = true;
+    $("code-btn").textContent = "Signing in…";
+    var r = await api("/api/pay/login", { method: "POST", body: JSON.stringify({ code: code }) });
+    $("code-btn").disabled = false;
+    $("code-btn").textContent = "Sign in";
+    if (!r.ok) { msg.textContent = (r.data && r.data.error) || "Sign-in failed. Try again."; return; }
+    $("code").value = "";
+    show("loading");
+    load();
+  });
+
+  $("email-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var email = $("email").value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      $("email-msg").textContent = "Enter the email address I send your invoices to.";
+      $("email").focus();
+      return;
+    }
+    window.location.href = config.emailLoginUrl + "?prefilled_email=" + encodeURIComponent(email);
+  });
+
+  $("manage-btn").addEventListener("click", async function () {
+    var btn = $("manage-btn");
+    $("manage-msg").textContent = "";
+    btn.disabled = true;
+    var label = btn.textContent;
+    btn.textContent = "Opening…";
+    var r = await api("/api/pay/manage", { method: "POST" });
+    if (r.ok && r.data && r.data.url) { window.location.href = r.data.url; return; }
+    btn.disabled = false;
+    btn.textContent = label;
+    if (r.status === 401) { show("signin"); return; }
+    $("manage-msg").textContent = (r.data && r.data.error) || "Couldn't open the payment screen.";
+  });
+
+  $("signout").addEventListener("click", async function () {
+    await api("/api/pay/logout", { method: "POST" });
+    show("signin");
+    load();
+  });
+
+  var params = new URLSearchParams(window.location.search);
+  if (params.has("updated")) {
+    $("toast").textContent = "Payment method saved. Future charges will use it.";
+    $("toast").hidden = false;
+    history.replaceState(null, "", window.location.pathname);
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>
