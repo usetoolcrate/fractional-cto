@@ -349,7 +349,7 @@
         " · you keep ≈ " + money(keep(a.pending.first, "bank")) + " by bank") :
       tile("Next charge", a.nextCharge ? money(a.nextCharge.amount) : "—", a.nextCharge
         ? date(a.nextCharge.date) + " · you keep ≈ " + money(keep(a.nextCharge.amount, methodOf(a) || "bank")) + (methodOf(a) ? "" : " by bank")
-        : "Nothing scheduled"),
+        : a.endsAt ? "Plan ends " + date(a.endsAt) + "; no more charges" : "Nothing scheduled"),
       tile("Autopay", a.autopay ? a.autopay.label : "Not set up", a.autopay ? (a.autopay.kind === "bank" ? "Bank (ACH)" : "Card") : "Client sets it up at /payments"),
       tile("Owed now", owedSum ? money(owedSum) : "$0.00", owed.some(function (i) { return i.attempted; }) ? "A payment failed; Stripe is retrying" : owed.length ? owed.length + " open invoice(s)" : "All paid"),
     ]));

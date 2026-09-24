@@ -88,9 +88,14 @@ export async function loadAccount(customerId, { admin = false, detail = false } 
     ];
   }
 
+  // Fixed-term plans end: a schedule that cancels at its end, or a set cancel date.
+  let endsAt = schedule?.end_behavior === "cancel" ? schedule.phases.at(-1)?.end_date ?? null : null;
+  if (sub?.cancel_at) endsAt = endsAt ? Math.min(endsAt, sub.cancel_at) : sub.cancel_at;
+
   let nextCharge = null;
   if (sub) {
     const date = sub.items.data[0]?.current_period_end ?? null;
+    const ending = endsAt && date && date >= endsAt;
     let amount = itemsTotal(sub.items.data);
     try {
       const preview = await call("POST", "invoices/create_preview", { customer: customerId, subscription: sub.id });
@@ -98,7 +103,7 @@ export async function loadAccount(customerId, { admin = false, detail = false } 
     } catch {
       // Keep the plain item total if the preview isn't available.
     }
-    if (date) nextCharge = { date, amount };
+    if (date && !ending) nextCharge = { date, amount };
   } else if (schedule?.status === "not_started") {
     nextCharge = { date: schedule.phases[0].start_date, amount: itemsTotal(schedule.phases[0].items) };
   }
@@ -134,6 +139,7 @@ export async function loadAccount(customerId, { admin = false, detail = false } 
     needsReconcile: Boolean(pendingRaw && sub),
     client: { name: customer.name || customer.email || "Client", email: customer.email },
     plan,
+    endsAt,
     pending,
     nextCharge,
     autopay: describePaymentMethod(pm),

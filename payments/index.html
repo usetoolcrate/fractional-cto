@@ -425,7 +425,7 @@
         (clearing.length ? " A bank payment of " + money(clearing[0].total) + " is still clearing; that takes a few business days." : "");
     } else {
       $("next-amount").textContent = "—";
-      $("next-when").textContent = "Nothing scheduled.";
+      $("next-when").textContent = a.endsAt ? "Your plan ends on " + date(a.endsAt) + ". No further charges." : "Nothing scheduled.";
     }
 
     if (a.autopay) {
