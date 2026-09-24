@@ -33,15 +33,29 @@ export function readToken(token) {
   return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected)) ? customerId : null;
 }
 
-export function customerFromRequest(request) {
+function rawToken(request) {
   const header = request.headers.get("cookie") || "";
   for (const part of header.split(";")) {
     const i = part.indexOf("=");
-    if (i !== -1 && part.slice(0, i).trim() === COOKIE) {
-      return readToken(decodeURIComponent(part.slice(i + 1).trim()));
-    }
+    if (i !== -1 && part.slice(0, i).trim() === COOKIE) return decodeURIComponent(part.slice(i + 1).trim());
   }
   return null;
+}
+
+export function customerFromRequest(request) {
+  return readToken(rawToken(request));
+}
+
+// Unix seconds when this browser signed in (tokens carry only their expiry).
+export function sessionIssuedAt(request) {
+  const expires = Number((rawToken(request) || "").split(".")[1]);
+  return Number.isFinite(expires) ? Math.floor((expires - TTL_MS) / 1000) : 0;
+}
+
+// Issuing a new code signs out every browser that signed in before it.
+export function sessionRevoked(request, customer) {
+  const issued = Number(customer?.metadata?.code_issued_at) || 0;
+  return issued > 0 && sessionIssuedAt(request) < issued;
 }
 
 export function sessionCookie(token) {

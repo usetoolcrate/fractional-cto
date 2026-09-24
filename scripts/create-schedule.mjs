@@ -5,14 +5,14 @@
 // the schedule then releases and the subscription keeps billing that price.
 // Charges happen automatically on the start day each month (card or ACH on file).
 import { parseArgs } from "node:util";
-import { isTestMode, stripe } from "../api/pay/_lib/stripe.mjs";
+import { centralMidnight } from "../api/_lib/billing.mjs";
+import { isTestMode, stripe } from "../api/_lib/stripe.mjs";
 
 const { values } = parseArgs({
   options: {
     customer: { type: "string" },
     start: { type: "string" },
     phases: { type: "string" },
-    "utc-offset": { type: "string", default: "-05:00" }, // Central Daylight Time; use -06:00 in winter
   },
 });
 if (!values.customer || !values.start || !values.phases) {
@@ -20,8 +20,8 @@ if (!values.customer || !values.start || !values.phases) {
   process.exit(1);
 }
 
-const startDate = Math.floor(new Date(`${values.start}T00:00:00${values["utc-offset"]}`).getTime() / 1000);
-if (!Number.isFinite(startDate)) throw new Error(`Bad --start date: ${values.start}`);
+const startDate = centralMidnight(values.start); // 00:00 Central, DST-aware
+if (!startDate) throw new Error(`Bad --start date: ${values.start}`);
 
 const specs = values.phases.split(",").map((s) => {
   const [lookup, months] = s.split(":");

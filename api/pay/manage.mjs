@@ -1,5 +1,5 @@
-import { customerFromRequest, json } from "./_lib/session.mjs";
-import { stripe } from "./_lib/stripe.mjs";
+import { customerFromRequest, json, sessionCookie, sessionRevoked } from "../_lib/session.mjs";
+import { stripe } from "../_lib/stripe.mjs";
 
 // Sends the signed-in client to Stripe's hosted screen for adding or changing
 // their autopay card / bank account, then back to /payments.
@@ -9,6 +9,10 @@ export async function POST(request) {
 
   const origin = new URL(request.url).origin;
   try {
+    const customer = await stripe("GET", `customers/${customerId}`);
+    if (customer.deleted || sessionRevoked(request, customer)) {
+      return json({ error: "Not signed in" }, 401, { "Set-Cookie": sessionCookie(null) });
+    }
     const session = await stripe("POST", "billing_portal/sessions", {
       customer: customerId,
       return_url: `${origin}/payments`,

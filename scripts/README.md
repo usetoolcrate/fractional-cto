@@ -3,7 +3,7 @@
 Clients sign in with a client code (or get a sign-in link from Stripe by email), see their plan, next charge and invoices, and set up autopay by card or bank account (ACH). Stripe is the only database: codes are stored as a SHA-256 hash in the customer's metadata.
 
 - Page: `payments/index.html`
-- Functions: `api/pay/*.mjs` (no npm dependencies; Stripe REST via `fetch`, API version pinned in `api/pay/_lib/stripe.mjs`)
+- Functions: `api/pay/*.mjs` (client), `api/admin/*.mjs` (admin); shared code in `api/_lib/`. No npm dependencies: Stripe and Resend REST via `fetch`, Stripe API version pinned in `api/_lib/stripe.mjs`
 - Scripts: this folder. It's excluded from deploys by `.vercelignore`.
 
 ## Environment
@@ -41,7 +41,9 @@ This is safe to re-run. It creates:
    node --env-file=.env scripts/create-schedule.mjs --customer cus_... --start 2026-10-01 \
      --phases sw_build_care_250:18,sw_hosting_140:ongoing
    ```
-   `--start` is midnight Central. The default offset is `-05:00` (daylight time); pass `--utc-offset -06:00` for a start date between November and March.
+   `--start` is midnight Central time (daylight saving handled automatically).
+
+   Everything in steps 1–3 can also be done from the admin page at `/admin`, which is the normal way.
 3. Send the client `https://schottky.com/payments` and their code, and ask them to set up autopay before the first charge. Customer search can take about a minute to pick up a new code.
 
 ## Stripe Dashboard settings (per mode)

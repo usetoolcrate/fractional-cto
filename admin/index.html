@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Client Admin — Schottky</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#faf8f4; --paper-deep:#f1ede5; --ink:#1c1e21; --ink-soft:#4a4f56; --ink-faint:#8a8f96;
+    --accent:#1f5c48; --accent-bright:#2b7a5f; --accent-tint:#e7f0ec;
+    --brass:#b0812f; --brass-tint:#f6eedf; --alert:#a2402e; --alert-tint:#f8e9e5;
+    --line:#e2dcd0; --card:#ffffff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',-apple-system,sans-serif;background:var(--paper);color:var(--ink);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:'Newsreader',Georgia,serif;font-weight:500;line-height:1.15;letter-spacing:-.01em}
+  a{color:var(--accent)}
+  button,input{font:inherit}
+  :focus-visible{outline:2px solid var(--accent-bright);outline-offset:2px}
+  [hidden]{display:none !important}
+  .num{font-variant-numeric:tabular-nums}
+
+  header{border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:5}
+  .bar{max-width:1240px;margin:0 auto;padding-inline:20px;height:58px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .logo{font-family:'Newsreader',serif;font-size:1.15rem;font-weight:600;color:var(--ink);text-decoration:none}
+  .logo span{color:var(--accent)}
+  .bar-right{display:flex;align-items:center;gap:14px;font-size:.85rem;color:var(--ink-soft)}
+  .pill{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .pill.test{color:var(--brass);background:var(--brass-tint);border:1px solid #e8d7b6}
+  .pill.ok{color:var(--accent);background:var(--accent-tint)}
+  .pill.warn{color:#8a6320;background:var(--brass-tint)}
+  .pill.bad{color:var(--alert);background:var(--alert-tint)}
+  .pill.muted{color:var(--ink-soft);background:var(--paper-deep)}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--accent);color:#fff;border:0;border-radius:6px;padding:9px 16px;font-weight:600;font-size:.9rem;cursor:pointer;text-decoration:none;white-space:nowrap}
+  .btn:hover{background:var(--accent-bright)}
+  .btn:disabled{opacity:.55;cursor:default}
+  .btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+  .btn.ghost:hover{background:var(--accent-tint)}
+  .btn.danger{background:var(--alert)}
+  .btn.small{padding:5px 10px;font-size:.8rem}
+  .link{background:none;border:0;color:var(--ink-soft);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:.85rem;padding:0}
+  .link.bad{color:var(--alert)}
+
+  label.f{display:flex;flex-direction:column;gap:4px;font-size:.78rem;font-weight:600;color:var(--ink-soft);min-width:0}
+  input.i{border:1px solid var(--line);border-radius:6px;background:var(--card);padding:8px 10px;font-size:.95rem;color:var(--ink);width:100%;min-width:0}
+  input.i:focus{border-color:var(--accent)}
+  .msg{font-size:.88rem;min-height:1.3em}
+  .msg:empty{display:none}
+  .msg.err{color:var(--alert)}
+  .msg.ok{color:var(--accent)}
+
+  /* Login */
+  .login{max-width:380px;margin:12vh auto 0;padding-inline:20px;display:flex;flex-direction:column;gap:16px}
+  .login h1{font-size:2rem}
+
+  /* Layout */
+  .app{max-width:1240px;margin:0 auto;padding:24px 20px 60px;display:grid;grid-template-columns:340px minmax(0,1fr);gap:24px;align-items:start}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:10px}
+  .side{display:flex;flex-direction:column;gap:14px;position:sticky;top:82px}
+  .side-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .side-head h2{font-size:1.35rem}
+  .list{list-style:none;overflow:hidden}
+  .list li+li{border-top:1px solid var(--line)}
+  .list button{width:100%;text-align:left;background:none;border:0;padding:12px 14px;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;color:var(--ink)}
+  .list button:hover{background:var(--paper)}
+  .list button[aria-current="true"]{background:var(--accent-tint)}
+  .list .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .list .sub{grid-column:1;font-size:.8rem;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .list .pill{grid-row:1 / span 2;grid-column:2;align-self:center}
+  .empty{padding:16px 14px;color:var(--ink-soft);font-size:.9rem}
+  .newform{padding:14px;display:flex;flex-direction:column;gap:10px}
+  .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+
+  /* Detail */
+  .detail{display:flex;flex-direction:column;gap:18px;min-width:0}
+  .d-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  .d-head h1{font-size:2rem}
+  .d-head .meta{color:var(--ink-soft);font-size:.9rem}
+  .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .tile{padding:16px;display:flex;flex-direction:column;gap:4px}
+  .tile .k{font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint)}
+  .tile .v{font-family:'Newsreader',serif;font-size:1.5rem;line-height:1.2}
+  .tile .s{font-size:.82rem;color:var(--ink-soft)}
+  .sec{padding:18px;display:flex;flex-direction:column;gap:12px}
+  .sec h2{font-size:1.25rem}
+  .sec .hint{font-size:.85rem;color:var(--ink-soft)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .codebox{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--paper-deep);border-radius:8px;padding:12px 14px}
+  .codebox code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.15rem;letter-spacing:.08em}
+
+  .phases{list-style:none;border:1px solid var(--line);border-radius:8px}
+  .phases>li{padding:12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px}
+  .phases>li+li{border-top:1px solid var(--line)}
+  .phases .amt{font-weight:600}
+  .phases .when{font-size:.85rem;color:var(--ink-soft)}
+  .phases .items{grid-column:1 / -1;font-size:.85rem;color:var(--ink-soft)}
+  .billed{list-style:none;display:flex;flex-direction:column;gap:6px}
+  .billed li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--line);border-radius:6px}
+  .confirm{border:1px solid #e8d7b6;background:var(--brass-tint);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+
+  .designer .ph{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 150px;gap:8px;align-items:end;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+  .designer .ongoing{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--ink-soft);padding-bottom:8px;white-space:nowrap}
+  .preview{background:var(--accent-tint);border-radius:8px;padding:12px 14px;font-size:.9rem}
+  .preview strong{font-variant-numeric:tabular-nums}
+
+  .inv{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .inv-row{display:grid;grid-template-columns:8.5rem minmax(0,1fr) 6.5rem 8rem 6rem;gap:10px;align-items:center;padding:9px 14px;font-size:.88rem}
+  .inv-row+.inv-row{border-top:1px solid var(--line)}
+  .inv-row .a{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+  .inv-row .l{text-align:right}
+  .inv-row .d{color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .placeholder{padding:40px 20px;text-align:center;color:var(--ink-soft)}
+
+  @media (max-width:900px){
+    .app{grid-template-columns:minmax(0,1fr)}
+    .side{position:static}
+    .tiles{grid-template-columns:minmax(0,1fr)}
+    .designer .ph{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+    .designer .ph .nm-f{grid-column:1 / -1}
+    .inv-row{grid-template-columns:minmax(0,1fr) auto;gap:2px 10px}
+    .inv-row .d{grid-column:1 / -1;grid-row:2}
+    .inv-row .l{grid-column:1 / -1;text-align:left}
+    .bar,.app{padding-inline:16px}
+  }
+  @media (max-width:560px){
+    .bar-right .lbl{display:none}
+    .logo{white-space:nowrap}
+    .link{white-space:nowrap}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <a class="logo" href="/">Alexander <span>Schottky</span></a>
+    <div class="bar-right">
+      <span class="pill test" id="test-pill" hidden>Stripe test mode</span>
+      <span class="lbl">Client admin</span>
+      <button class="link" id="signout" type="button" hidden>Sign out</button>
+    </div>
+  </div>
+</header>
+
+<form class="login" id="login" hidden>
+  <h1>Client admin</h1>
+  <label class="f">Password<input class="i" id="pw" type="password" autocomplete="current-password" required></label>
+  <button class="btn" type="submit">Sign in</button>
+  <p class="msg err" id="login-msg" role="alert"></p>
+</form>
+
+<div class="app" id="app" hidden>
+  <aside class="side">
+    <div class="side-head">
+      <h2>Clients</h2>
+      <button class="link" type="button" id="refresh">Refresh</button>
+    </div>
+    <ul class="panel list" id="list"><li class="empty">Loading…</li></ul>
+    <form class="panel newform" id="new-client" novalidate>
+      <h3 style="font-size:1.05rem">New client</h3>
+      <label class="f">Name<input class="i" id="nc-name" autocomplete="off" required></label>
+      <label class="f">Billing email<input class="i" id="nc-email" type="email" autocomplete="off" required></label>
+      <label class="f">Code prefix (optional)<input class="i" id="nc-prefix" maxlength="4" autocomplete="off" placeholder="WFD" style="text-transform:uppercase"></label>
+      <button class="btn" type="submit">Add client</button>
+      <p class="msg err" id="nc-msg" role="alert"></p>
+    </form>
+  </aside>
+
+  <main class="detail" id="detail">
+    <div class="panel placeholder">Pick a client, or add a new one.</div>
+  </main>
+</div>
+
+<script>
+(function () {
+  var TZ = "America/Chicago";
+  var $ = function (id) { return document.getElementById(id); };
+  var money = function (c) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((c || 0) / 100); };
+  var date = function (s, o) { return new Date(s * 1000).toLocaleDateString("en-US", Object.assign({ timeZone: TZ }, o || { month: "short", day: "numeric", year: "numeric" })); };
+  var monthYear = function (s) { return date(s, { month: "short", year: "numeric" }); };
+  var rid = function () { return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()); };
+
+  function el(tag, attrs, kids) {
+    var n = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      var v = attrs[k];
+      if (v === undefined || v === null || v === false) return;
+      if (k === "text") n.textContent = v;
+      else if (k.slice(0, 2) === "on") n.addEventListener(k.slice(2), v);
+      else n.setAttribute(k, v === true ? "" : v);
+    });
+    (kids || []).forEach(function (c) { if (c) n.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    return n;
+  }
+
+  async function api(path, body) {
+    var opts = { credentials: "same-origin", headers: { "Content-Type": "application/json" } };
+    if (body !== undefined) { opts.method = "POST"; opts.body = JSON.stringify(body); }
+    var r = await fetch(path, opts);
+    var data = {};
+    try { data = await r.json(); } catch (e) {}
+    if (r.status === 401) showLogin();
+    return { ok: r.ok, status: r.status, data: data };
+  }
+
+  function showLogin() {
+    $("login").hidden = false; $("app").hidden = true; $("signout").hidden = true;
+    $("pw").focus();
+  }
+  function showApp() { $("login").hidden = true; $("app").hidden = false; $("signout").hidden = false; }
+
+  function monthsBetween(a, b) {
+    var da = new Date(a * 1000), db = new Date(b * 1000);
+    return (db.getUTCFullYear() - da.getUTCFullYear()) * 12 + (db.getUTCMonth() - da.getUTCMonth());
+  }
+  function planLine(plan) {
+    if (!plan || !plan.length) return "No plan yet";
+    return plan.map(function (p) { return money(p.amount) + "/mo" + (p.ongoing ? "" : " × " + monthsBetween(p.start, p.end)); }).join(" → ");
+  }
+
+  /* ---------- client list ---------- */
+  var state = { clients: [], selected: null };
+
+  function statusPill(c) {
+    if (c.failed) return ["Payment failed", "bad"];
+    if (c.owed) return ["Owes " + money(c.owed), "warn"];
+    if (!c.plan.length) return ["No plan", "muted"];
+    if (!c.autopay) return ["No autopay", "warn"];
+    return ["Autopay on", "ok"];
+  }
+
+  function renderList() {
+    var ul = $("list");
+    ul.textContent = "";
+    if (!state.clients.length) { ul.appendChild(el("li", { class: "empty", text: "No clients yet. Add one below." })); return; }
+    state.clients.forEach(function (c) {
+      var p = statusPill(c);
+      ul.appendChild(el("li", {}, [el("button", {
+        type: "button", "aria-current": state.selected === c.id ? "true" : "false",
+        onclick: function () { openClient(c.id); },
+      }, [
+        el("span", { class: "nm", text: c.name }),
+        el("span", { class: "pill " + p[1], text: p[0] }),
+        el("span", { class: "sub", text: planLine(c.plan) }),
+      ])]));
+    });
+  }
+
+  async function loadList() {
+    var r = await api("/api/admin/clients");
+    if (!r.ok) { if (r.status !== 401) { $("list").textContent = ""; $("list").appendChild(el("li", { class: "empty", text: r.data.error || "Couldn't load clients." })); } return false; }
+    $("test-pill").hidden = !r.data.testMode;
+    state.clients = r.data.clients;
+    renderList();
+    showApp();
+    return true;
+  }
+
+  /* ---------- client detail ---------- */
+  async function openClient(id) {
+    state.selected = id;
+    renderList();
+    var box = $("detail");
+    box.textContent = "";
+    box.appendChild(el("div", { class: "panel placeholder", text: "Loading…" }));
+    var r = await api("/api/admin/client?id=" + encodeURIComponent(id));
+    if (!r.ok) { box.textContent = ""; box.appendChild(el("div", { class: "panel placeholder", text: r.data.error || "Couldn't load this client." })); return; }
+    renderDetail(r.data);
+    if (window.matchMedia("(max-width:900px)").matches) box.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function tile(k, v, s) { return el("div", { class: "panel tile" }, [el("span", { class: "k", text: k }), el("span", { class: "v num", text: v }), s ? el("span", { class: "s", text: s }) : null]); }
+
+  function renderDetail(a) {
+    var box = $("detail");
+    box.textContent = "";
+    var owed = a.invoices.filter(function (i) { return i.status === "open" && !i.processing; });
+    var owedSum = owed.reduce(function (s, i) { return s + i.remaining; }, 0);
+
+    box.appendChild(el("div", { class: "d-head" }, [
+      el("div", {}, [el("h1", { text: a.client.name }), el("p", { class: "meta", text: a.client.email || "" })]),
+      el("a", { class: "btn ghost small", href: a.dashboard, target: "_blank", rel: "noopener", text: "Open in Stripe" }),
+    ]));
+
+    box.appendChild(el("div", { class: "tiles" }, [
+      tile("Next charge", a.nextCharge ? money(a.nextCharge.amount) : "—", a.nextCharge ? date(a.nextCharge.date) : "Nothing scheduled"),
+      tile("Autopay", a.autopay ? a.autopay.label : "Not set up", a.autopay ? (a.autopay.kind === "bank" ? "Bank (ACH)" : "Card") : "Client sets it up at /payments"),
+      tile("Owed now", owedSum ? money(owedSum) : "$0.00", owed.some(function (i) { return i.attempted; }) ? "A payment failed; Stripe is retrying" : owed.length ? owed.length + " open invoice(s)" : "All paid"),
+    ]));
+
+    box.appendChild(accessSection(a));
+    box.appendChild(a.plan.length ? planSection(a) : designerSection(a));
+    box.appendChild(requestSection(a));
+    box.appendChild(invoicesSection(a));
+  }
+
+  /* Access: sign-in code + invite email */
+  function accessSection(a) {
+    var md = a.metadata || {};
+    var status = md.portal_code_sha256
+      ? "Code issued" + (md.code_issued_at ? " " + date(Number(md.code_issued_at)) : "") + (md.invite_sent_at ? ", invite emailed " + date(Number(md.invite_sent_at)) + "." : ", not emailed yet.")
+      : "No code issued yet.";
+    var out = el("div", {});
+    var msg = el("p", { class: "msg err", role: "alert" });
+    async function issue(send, btn) {
+      btn.disabled = true; msg.textContent = ""; msg.className = "msg err";
+      var r = await api("/api/admin/client", { id: a.id, action: "code", send: send, requestId: rid() });
+      btn.disabled = false;
+      out.textContent = "";
+      if (!r.ok) { msg.textContent = r.data.error || "Failed."; return; }
+      var copy = el("button", { class: "btn ghost small", type: "button", text: "Copy", onclick: function () {
+        navigator.clipboard && navigator.clipboard.writeText(r.data.code).then(function () { copy.textContent = "Copied"; }, function () {});
+      } });
+      out.appendChild(el("div", { class: "codebox" }, [el("code", { text: r.data.code }), copy]));
+      if (r.data.emailed) { msg.className = "msg ok"; msg.textContent = "Invite emailed to " + r.data.to + ". The previous code no longer works."; }
+      else if (r.data.emailError) { msg.textContent = "New code is live, but the email didn't send: " + r.data.emailError + " Send the code yourself."; }
+      else { msg.className = "msg ok"; msg.textContent = "New code is live. The previous code no longer works."; }
+    }
+    return el("section", { class: "panel sec" }, [
+      el("h2", { text: "Access to /payments" }),
+      el("p", { class: "hint", text: status + " Codes are stored only as a fingerprint, so issuing one always makes a new code." }),
+      el("div", { class: "row" }, [
+        el("button", { class: "btn", type: "button", text: "Email invite with new code", onclick: function (e) { issue(true, e.currentTarget); } }),
+        el("button", { class: "btn ghost", type: "button", text: "New code, don't email", onclick: function (e) { issue(false, e.currentTarget); } }),
+      ]),
+      out, msg,
+    ]);
+  }
+
+  /* Existing plan + add-ons */
+  function planSection(a) {
+    var now = Date.now() / 1000;
+    var phases = el("ul", { class: "phases" });
+    a.plan.forEach(function (p) {
+      var when = p.ongoing ? "From " + monthYear(p.start) + ", ongoing"
+        : monthYear(p.start) + " – " + monthYear(p.end - 86400) + " · " + monthsBetween(p.start, p.end) + " months · " + money(p.amount * monthsBetween(p.start, p.end)) + " total";
+      var tag = p.current || (p.ongoing && p.start <= now) ? ["Now", "ok"] : p.start > now ? ["Later", "muted"] : ["Done", "muted"];
+      phases.appendChild(el("li", {}, [
+        el("span", { class: "amt num", text: money(p.amount) + " / month" }),
+        el("span", { class: "pill " + tag[1], text: tag[0] }),
+        el("span", { class: "when", text: when }),
+        el("span", { class: "items", text: (p.items || []).map(function (it) { return it.name + " " + money(it.amount); }).join(" + ") }),
+      ]));
+    });
+
+    // Distinct items still billed in current/future phases.
+    var seen = {}, billed = [];
+    a.plan.filter(function (p) { return p.ongoing || !p.end || p.end > now; }).forEach(function (p) {
+      (p.items || []).forEach(function (it) { if (!seen[it.product]) { seen[it.product] = 1; billed.push(it); } });
+    });
+    var msg = el("p", { class: "msg err", role: "alert" });
+    var confirmBox = el("div", {});
+    var list = el("ul", { class: "billed" });
+    billed.forEach(function (it) {
+      list.appendChild(el("li", {}, [
+        el("span", {}, [el("strong", { text: it.name }), " ", el("span", { class: "num", text: money(it.amount) + "/mo" })]),
+        el("button", { class: "link bad", type: "button", text: "Remove", onclick: function () {
+          confirmBox.textContent = "";
+          confirmBox.appendChild(el("div", { class: "confirm" }, [
+            el("p", { text: "Stop billing " + it.name + " (" + money(it.amount) + "/mo) from now on, including all later phases?" }),
+            el("div", { class: "row" }, [
+              el("button", { class: "btn danger small", type: "button", text: "Remove it", onclick: async function (e) {
+                e.currentTarget.disabled = true;
+                var r = await api("/api/admin/client", { id: a.id, action: "addon-remove", product: it.product });
+                if (!r.ok) { msg.textContent = r.data.error || "Failed."; confirmBox.textContent = ""; return; }
+                openClient(a.id); loadList();
+              } }),
+              el("button", { class: "btn ghost small", type: "button", text: "Cancel", onclick: function () { confirmBox.textContent = ""; } }),
+            ]),
+          ]));
+        } }),
+      ]));
+    });
+
+    var name = el("input", { class: "i", id: "ao-name", placeholder: "Social media management", autocomplete: "off" });
+    var amt = el("input", { class: "i num", id: "ao-amt", inputmode: "decimal", placeholder: "360" });
+    var addBtn = el("button", { class: "btn", type: "submit", text: "Add to plan" });
+    var addForm = el("form", { class: "row", novalidate: true, onsubmit: async function (e) {
+      e.preventDefault(); msg.textContent = ""; addBtn.disabled = true;
+      var r = await api("/api/admin/client", { id: a.id, action: "addon-add", name: name.value, amount: amt.value });
+      addBtn.disabled = false;
+      if (!r.ok) { msg.textContent = r.data.error || "Failed."; return; }
+      openClient(a.id); loadList();
+    } }, [
+      el("label", { class: "f", style: "flex:2 1 200px" }, ["Add-on name", name]),
+      el("label", { class: "f", style: "flex:1 1 90px" }, ["$ per month", amt]),
+      addBtn,
+    ]);
+
+    return el("section", { class: "panel sec" }, [
+      el("h2", { text: "Plan" }),
+      phases,
+      el("h3", { style: "font-size:1.05rem;margin-top:6px", text: "Billed items" }),
+      el("p", { class: "hint", text: "Adding or removing an item changes this month forward and every later phase. Nothing is prorated." }),
+      list, confirmBox, addForm, msg,
+    ]);
+  }
+
+  /* Plan designer for a client with no plan */
+  function firstOfNextMonth() {
+    var t = new Date(new Date().toLocaleString("en-US", { timeZone: TZ }));
+    var d = new Date(t.getFullYear(), t.getMonth() + 1, 1);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-01";
+  }
+  function addMonths(ymd, n) {
+    var p = ymd.split("-").map(Number);
+    var d = new Date(Date.UTC(p[0], p[1] - 1 + n, p[2]));
+    return d;
+  }
+  function fmtMonth(d) { return d.toLocaleDateString("en-US", { timeZone: "UTC", month: "short", year: "numeric" }); }
+  function toCents(v) { var n = Number(String(v).replace(/[$,\s]/g, "")); return Number.isFinite(n) ? Math.round(n * 100) : NaN; }
+
+  function designerSection(a) {
+    var rows = [
+      { name: "Website build & care", amount: "250", months: "18", ongoing: false },
+      { name: "Hosting & maintenance", amount: "140", months: "", ongoing: true },
+    ];
+    var start = el("input", { class: "i", type: "date", id: "pd-start", value: firstOfNextMonth() });
+    var list = el("div", { style: "display:flex;flex-direction:column;gap:8px" });
+    var preview = el("div", { class: "preview" });
+    var msg = el("p", { class: "msg err", role: "alert" });
+    var confirmBox = el("div", {});
+
+    function draw() {
+      list.textContent = "";
+      rows.forEach(function (r, i) {
+        var last = i === rows.length - 1;
+        if (!last) r.ongoing = false;
+        var nm = el("input", { class: "i", value: r.name, oninput: function (e) { r.name = e.target.value; update(); } });
+        var am = el("input", { class: "i num", inputmode: "decimal", value: r.amount, oninput: function (e) { r.amount = e.target.value; update(); } });
+        var mo = el("input", { class: "i num", type: "number", min: "1", max: "60", value: r.months, disabled: r.ongoing, oninput: function (e) { r.months = e.target.value; update(); } });
+        list.appendChild(el("div", { class: "ph" }, [
+          el("label", { class: "f nm-f" }, ["Phase " + (i + 1) + " · shows on invoices as", nm]),
+          el("label", { class: "f" }, ["$ per month", am]),
+          el("label", { class: "f" }, ["Months", mo]),
+          el("div", { style: "display:flex;gap:10px;align-items:center" }, [
+            last ? el("label", { class: "ongoing" }, [el("input", { type: "checkbox", checked: r.ongoing, onchange: function (e) { r.ongoing = e.target.checked; draw(); } }), "Ongoing"]) : null,
+            rows.length > 1 ? el("button", { class: "link bad", type: "button", text: "Remove", onclick: function () { rows.splice(i, 1); draw(); } }) : null,
+          ]),
+        ]));
+      });
+      update();
+    }
+
+    function summary() {
+      var s = start.value;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return { error: "Pick a start date." };
+      var lines = [], offset = 0, total = 0, firstAmount = null;
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i], c = toCents(r.amount);
+        if (!r.name.trim()) return { error: "Phase " + (i + 1) + " needs a name." };
+        if (!(c >= 100)) return { error: "Phase " + (i + 1) + " needs an amount." };
+        if (firstAmount === null) firstAmount = c;
+        if (r.ongoing) { lines.push("then " + money(c) + "/mo ongoing from " + fmtMonth(addMonths(s, offset))); break; }
+        var m = Number(r.months);
+        if (!(Number.isInteger(m) && m >= 1 && m <= 60)) return { error: "Phase " + (i + 1) + " needs 1 to 60 months." };
+        lines.push((i ? "then " : "") + money(c) + "/mo × " + m + " (" + fmtMonth(addMonths(s, offset)) + " – " + fmtMonth(addMonths(s, offset + m - 1)) + ") = " + money(c * m));
+        total += c * m; offset += m;
+        if (i === rows.length - 1) lines.push("then the plan ends (" + fmtMonth(addMonths(s, offset)) + ")");
+      }
+      return { lines: lines, total: total, first: firstAmount };
+    }
+
+    function update() {
+      var sm = summary();
+      preview.textContent = "";
+      if (sm.error) { preview.appendChild(el("span", { text: sm.error })); return; }
+      preview.appendChild(el("strong", { text: "Starts " + new Date(start.value + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) + ". " }));
+      preview.appendChild(document.createTextNode(sm.lines.join(", ") + "." + (sm.total ? " Fixed-term total " + money(sm.total) + "." : "")));
+    }
+    start.addEventListener("input", update);
+
+    var createBtn = el("button", { class: "btn", type: "button", text: "Create plan…", onclick: function () {
+      msg.textContent = "";
+      var sm = summary();
+      if (sm.error) { msg.textContent = sm.error; return; }
+      confirmBox.textContent = "";
+      var rq = rid();
+      confirmBox.appendChild(el("div", { class: "confirm" }, [
+        el("p", { text: "Create this plan for " + a.client.name + "? " + (a.autopay ? "Autopay is set up, so " + money(sm.first) + " will be charged on the start date." : "Autopay isn't set up yet; the first charge on the start date will fail unless they set it up first.") }),
+        el("div", { class: "row" }, [
+          el("button", { class: "btn", type: "button", text: "Create plan", onclick: async function (e) {
+            e.currentTarget.disabled = true;
+            var r = await api("/api/admin/client", {
+              id: a.id, action: "plan", start: start.value, requestId: rq,
+              phases: rows.map(function (x) { return { name: x.name, amount: x.amount.replace(/[$,\s]/g, ""), months: Number(x.months), ongoing: x.ongoing }; }),
+            });
+            if (!r.ok) { msg.textContent = r.data.error || "Failed."; confirmBox.textContent = ""; return; }
+            openClient(a.id); loadList();
+          } }),
+          el("button", { class: "btn ghost", type: "button", text: "Cancel", onclick: function () { confirmBox.textContent = ""; } }),
+        ]),
+      ]));
+    } });
+
+    draw();
+    return el("section", { class: "panel sec designer" }, [
+      el("h2", { text: "Design a plan" }),
+      el("p", { class: "hint", text: "Charges happen automatically on the start day each month. Phases run back to back; the last one can continue indefinitely." }),
+      el("div", { class: "row" }, [el("label", { class: "f", style: "flex:0 1 200px" }, ["First charge on", start])]),
+      list,
+      el("div", {}, [el("button", { class: "link", type: "button", text: "+ Add a phase", onclick: function () {
+        rows.forEach(function (r) { if (r.ongoing) { r.ongoing = false; if (!r.months) r.months = "12"; } });
+        rows.push({ name: "Hosting & maintenance", amount: "", months: "", ongoing: true }); draw();
+      } })]),
+      preview, el("div", {}, [createBtn]), confirmBox, msg,
+    ]);
+  }
+
+  /* One-off payment request */
+  function requestSection(a) {
+    var amt = el("input", { class: "i num", inputmode: "decimal", placeholder: "500" });
+    var desc = el("input", { class: "i", placeholder: "Logo refresh", autocomplete: "off" });
+    var due = el("input", { class: "i num", type: "number", min: "0", max: "90", value: "14" });
+    var msg = el("p", { class: "msg err", role: "alert" });
+    var btn = el("button", { class: "btn", type: "submit", text: "Send payment request" });
+    var rq = rid();
+    return el("section", { class: "panel sec" }, [
+      el("h2", { text: "One-off payment request" }),
+      el("p", { class: "hint", text: "Stripe emails the client an invoice with a Pay button (card or bank). It also shows on their /payments page." }),
+      el("form", { class: "row", novalidate: true, onsubmit: async function (e) {
+        e.preventDefault(); msg.textContent = ""; msg.className = "msg err"; btn.disabled = true;
+        var r = await api("/api/admin/client", { id: a.id, action: "request", amount: amt.value.replace(/[$,\s]/g, ""), description: desc.value, daysUntilDue: Number(due.value), requestId: rq });
+        btn.disabled = false;
+        if (!r.ok) { msg.textContent = r.data.error || "Failed."; return; }
+        rq = rid(); amt.value = ""; desc.value = "";
+        msg.className = "msg ok"; msg.textContent = "Sent invoice " + r.data.number + ".";
+        setTimeout(function () { openClient(a.id); loadList(); }, 1200);
+      } }, [
+        el("label", { class: "f", style: "flex:2 1 220px" }, ["For", desc]),
+        el("label", { class: "f", style: "flex:1 1 90px" }, ["Amount ($)", amt]),
+        el("label", { class: "f", style: "flex:0 1 110px" }, ["Due in (days)", due]),
+        btn,
+      ]),
+      msg,
+    ]);
+  }
+
+  function invoicesSection(a) {
+    var box = el("div", { class: "inv" });
+    if (!a.invoices.length) box.appendChild(el("p", { class: "empty", text: "No invoices yet." }));
+    a.invoices.forEach(function (inv) {
+      var st = inv.status === "paid" ? ["Paid", "ok"] : inv.status === "open" ? (inv.processing ? ["Processing", "muted"] : inv.attempted ? ["Failed", "bad"] : ["Due", "warn"]) : [inv.status, "muted"];
+      box.appendChild(el("div", { class: "inv-row" }, [
+        el("span", { class: "num", text: date(inv.created) }),
+        el("span", { class: "d", text: (inv.number || "") + (inv.description ? " · " + inv.description : "") }),
+        el("span", { class: "a", text: money(inv.total) }),
+        el("span", {}, [el("span", { class: "pill " + st[1], text: st[0] })]),
+        el("span", { class: "l" }, [inv.url ? el("a", { href: inv.url, target: "_blank", rel: "noopener", text: "View" }) : null]),
+      ]));
+    });
+    return el("section", { class: "panel sec" }, [el("h2", { text: "Invoices" }), box]);
+  }
+
+  /* ---------- wiring ---------- */
+  $("login").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    $("login-msg").textContent = "";
+    var r = await api("/api/admin/login", { password: $("pw").value });
+    if (!r.ok) { $("login-msg").textContent = r.data.error || "Sign-in failed."; return; }
+    $("pw").value = "";
+    loadList();
+  });
+
+  $("signout").addEventListener("click", async function () {
+    await api("/api/admin/logout", {});
+    state = { clients: [], selected: null };
+    $("detail").textContent = "";
+    $("detail").appendChild(el("div", { class: "panel placeholder", text: "Pick a client, or add a new one." }));
+    showLogin();
+  });
+
+  $("refresh").addEventListener("click", function () { loadList(); if (state.selected) openClient(state.selected); });
+
+  var ncReq = rid();
+  $("new-client").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    $("nc-msg").textContent = "";
+    var name = $("nc-name").value.trim(), email = $("nc-email").value.trim();
+    var r = await api("/api/admin/clients", { name: name, email: email, prefix: $("nc-prefix").value, requestId: ncReq });
+    if (!r.ok) { $("nc-msg").textContent = r.data.error || "Couldn't add the client."; return; }
+    ncReq = rid();
+    $("nc-name").value = ""; $("nc-email").value = ""; $("nc-prefix").value = "";
+    await loadList();
+    // Stripe's search index can lag a minute behind a new client; show it now.
+    if (!state.clients.some(function (c) { return c.id === r.data.id; })) {
+      state.clients.push({ id: r.data.id, name: name, email: email, plan: [], nextCharge: null, autopay: null, owed: 0, failed: false });
+      renderList();
+    }
+    openClient(r.data.id);
+  });
+
+  loadList();
+})();
+</script>
+</body>
+</html>

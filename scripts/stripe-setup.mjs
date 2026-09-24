@@ -3,7 +3,7 @@
 // Creates the monthly prices, a "Client billing" payment-method setting
 // (card + ACH bank debit) and the customer-portal configuration, then prints
 // the env values the site needs.
-import { isTestMode, stripe } from "../api/pay/_lib/stripe.mjs";
+import { isTestMode, stripe } from "../api/_lib/stripe.mjs";
 
 const SITE = process.env.SITE_URL || "https://schottky.com";
 const DESCRIPTOR = "SCHOTTKY WEBDEV";

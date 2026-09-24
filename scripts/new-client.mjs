@@ -3,8 +3,8 @@
 // The code is printed once and only its hash is stored. Re-running for the same
 // email issues a fresh code and the old one stops working.
 import { parseArgs } from "node:util";
-import { generateCode, hashCode } from "../api/pay/_lib/codes.mjs";
-import { isTestMode, stripe } from "../api/pay/_lib/stripe.mjs";
+import { generateCode, hashCode } from "../api/_lib/codes.mjs";
+import { isTestMode, stripe } from "../api/_lib/stripe.mjs";
 
 const { values } = parseArgs({
   options: {
@@ -21,7 +21,7 @@ if (!values.name || !values.email) {
 
 const email = values.email.trim().toLowerCase();
 const code = generateCode(values.prefix);
-const metadata = { portal: "schottky", portal_code_sha256: hashCode(code) };
+const metadata = { portal: "schottky", portal_code_sha256: hashCode(code), code_issued_at: String(Math.floor(Date.now() / 1000)) };
 
 const found = values["test-clock"]
   ? { data: [] }
