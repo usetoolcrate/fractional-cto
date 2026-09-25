@@ -244,9 +244,10 @@
     return n;
   }
 
-  async function api(path, body) {
+  async function api(path, body, method) {
     var opts = { credentials: "same-origin", headers: { "Content-Type": "application/json" } };
     if (body !== undefined) { opts.method = "POST"; opts.body = JSON.stringify(body); }
+    if (method) opts.method = method;
     var r = await fetch(path, opts);
     var data = {};
     try { data = await r.json(); } catch (e) {}
@@ -787,14 +788,14 @@
   $("login").addEventListener("submit", async function (e) {
     e.preventDefault();
     $("login-msg").textContent = "";
-    var r = await api("/api/admin/login", { password: $("pw").value });
+    var r = await api("/api/admin/session", { password: $("pw").value });
     if (!r.ok) { $("login-msg").textContent = r.data.error || "Sign-in failed."; return; }
     $("pw").value = "";
     loadList();
   });
 
   $("signout").addEventListener("click", async function () {
-    await api("/api/admin/logout", {});
+    await api("/api/admin/session", undefined, "DELETE");
     state = { clients: [], selected: null };
     $("detail").textContent = "";
     $("detail").appendChild(el("div", { class: "panel placeholder", text: "Pick a client, or add a new one." }));

@@ -70,15 +70,6 @@ export function json(data, status = 200, headers = {}) {
   });
 }
 
-export async function readSessionId(request) {
-  try {
-    const body = await request.json();
-    const id = String(body?.session ?? "");
-    return /^cs_(test|live)_[A-Za-z0-9]+$/.test(id) ? id : null;
-  } catch {
-    return null;
-  }
-}
 
 // One-time email sign-in links: "link.<customerId>.<nonce>.<expiresMs>.<hmac>".
 // The nonce must still match the customer's metadata (login_link_nonce), which

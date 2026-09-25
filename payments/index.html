@@ -475,7 +475,7 @@
     if (!code) { msg.textContent = "Enter your client code."; $("code").focus(); return; }
     $("code-btn").disabled = true;
     $("code-btn").textContent = "Signing in…";
-    var r = await api("/api/pay/login", { method: "POST", body: JSON.stringify({ code: code }) });
+    var r = await api("/api/pay/session", { method: "POST", body: JSON.stringify({ code: code }) });
     $("code-btn").disabled = false;
     $("code-btn").textContent = "Sign in";
     if (!r.ok) { msg.textContent = (r.data && r.data.error) || "Sign-in failed. Try again."; return; }
@@ -497,7 +497,7 @@
       return;
     }
     btn.disabled = true;
-    var r = await api("/api/pay/email-link", { method: "POST", body: JSON.stringify({ email: email }) });
+    var r = await api("/api/pay/session", { method: "POST", body: JSON.stringify({ email: email }) });
     btn.disabled = false;
     if (!r.ok) { msg.textContent = (r.data && r.data.error) || "Couldn't send a link. Try again in a minute."; return; }
     msg.className = "msg ok";
@@ -520,7 +520,7 @@
   });
 
   $("signout").addEventListener("click", async function () {
-    await api("/api/pay/logout", { method: "POST" });
+    await api("/api/pay/session", { method: "DELETE" });
     show("signin");
     load();
   });
@@ -538,7 +538,7 @@
     var hashMatch = /^#link=([A-Za-z0-9_.\-]+)$/.exec(window.location.hash);
     if (!hashMatch) return false;
     history.replaceState(null, "", window.location.pathname + window.location.search);
-    var lr = await api("/api/pay/link-login", { method: "POST", body: JSON.stringify({ token: hashMatch[1] }) });
+    var lr = await api("/api/pay/session", { method: "POST", body: JSON.stringify({ token: hashMatch[1] }) });
     if (!lr.ok) linkError = (lr.data && lr.data.error) || "That sign-in link didn't work. Enter your email below to get a new one.";
     return true;
   }
@@ -554,7 +554,7 @@
     var session = params.get("started");
     if (session) {
       history.replaceState(null, "", window.location.pathname);
-      var r = await api("/api/pay/started", { method: "POST", body: JSON.stringify({ session: session }) });
+      var r = await api("/api/pay/start", { method: "POST", body: JSON.stringify({ session: session }) });
       if (r.ok) {
         toast(r.data.processing
           ? "Thanks! Your bank payment is on its way (it takes a few business days to clear) and your plan has started. Later months are charged automatically."

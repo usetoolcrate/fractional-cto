@@ -1,6 +1,7 @@
 import { adminCookie, makeAdminToken, passwordMatches, readJson } from "../_lib/admin.mjs";
 import { json } from "../_lib/session.mjs";
 
+// POST { password } -> sign in to /admin; DELETE -> sign out.
 export async function POST(request) {
   const body = await readJson(request);
   if (!passwordMatches(body.password)) {
@@ -8,4 +9,8 @@ export async function POST(request) {
     return json({ error: "Wrong password." }, 401);
   }
   return json({ ok: true }, 200, { "Set-Cookie": adminCookie(makeAdminToken()) });
+}
+
+export async function DELETE() {
+  return json({ ok: true }, 200, { "Set-Cookie": adminCookie(null) });
 }
