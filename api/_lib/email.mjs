@@ -1,27 +1,60 @@
 // Transactional email through Resend's REST API (no SDK). Sends as EMAIL_FROM,
 // default "Alexander Schottky <alex@schottky.com>"; replies go to the same inbox.
-// Every client email is blind-copied to EMAIL_BCC (default alex@schottky.com) so
-// I keep a record of exactly what each client was sent. Set EMAIL_BCC to "" to stop;
+//
+// Every client email also sends me a separate copy (EMAIL_BCC, default
+// alex@schottky.com) so I keep a record of exactly what each client was sent.
+// It's a separate message from EMAIL_COPY_FROM (portal@schottky.com), not a
+// real BCC: a BCC arrives "from me, to me", and Gmail files that under
+// Sent/All Mail instead of the inbox. Set EMAIL_BCC to "" to stop copies;
 // pass bcc: false for mail that shouldn't be copied (one-time sign-in links).
 
 const SITE = "https://schottky.com";
 
-export async function sendEmail({ to, subject, text, html, idempotencyKey, bcc: copyMe = true }) {
+async function resend(payload, idempotencyKey) {
   const key = process.env.RESEND_API_KEY;
   if (!key) throw new Error("RESEND_API_KEY is not set");
-  const from = process.env.EMAIL_FROM || "Alexander Schottky <alex@schottky.com>";
   const headers = { Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
   if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
-  const copy = copyMe ? (process.env.EMAIL_BCC ?? "alex@schottky.com").trim() : "";
-  const bcc = copy && copy.toLowerCase() !== String(to).toLowerCase() ? [copy] : undefined;
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ from, to: [to], bcc, subject, text, html, reply_to: process.env.EMAIL_REPLY_TO || "alex@schottky.com" }),
-  });
+  const res = await fetch("https://api.resend.com/emails", { method: "POST", headers, body: JSON.stringify(payload) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.message || `Email failed (${res.status})`);
-  return { id: data.id, copiedTo: bcc?.[0] ?? null };
+  return data.id;
+}
+
+export async function sendEmail({ to, subject, text, html, idempotencyKey, bcc: copyMe = true }) {
+  const from = process.env.EMAIL_FROM || "Alexander Schottky <alex@schottky.com>";
+  const id = await resend(
+    { from, to: [to], subject, text, html, reply_to: process.env.EMAIL_REPLY_TO || "alex@schottky.com" },
+    idempotencyKey,
+  );
+
+  const copy = copyMe ? (process.env.EMAIL_BCC ?? "alex@schottky.com").trim() : "";
+  if (!copy || copy.toLowerCase() === String(to).toLowerCase()) return { id, copiedTo: null };
+  const when = new Date().toLocaleString("en-US", {
+    timeZone: "America/Chicago", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
+  });
+  const note = `Copy of the email sent to ${to} on ${when} (Central).`;
+  try {
+    await resend(
+      {
+        from: process.env.EMAIL_COPY_FROM || "Schottky client portal <portal@schottky.com>",
+        to: [copy],
+        reply_to: to, // replying to the copy writes to the client
+        subject: `Copy: ${subject} (sent to ${to})`,
+        text: `${note}\n\n----------\n\n${text}`,
+        html: String(html).replace(
+          /(<body[^>]*>)/i,
+          `$1<div style="max-width:560px;margin:0 auto 12px;padding:10px 14px;background:#f1ede5;border-radius:6px;font-size:13px;color:#4a4f56">${esc(note)}</div>`,
+        ),
+      },
+      idempotencyKey ? `${idempotencyKey}-copy` : undefined,
+    );
+    return { id, copiedTo: copy };
+  } catch (err) {
+    // The client's email already went out; a failed copy shouldn't undo that.
+    console.error("copy email failed", err.message);
+    return { id, copiedTo: null };
+  }
 }
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
