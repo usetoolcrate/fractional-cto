@@ -79,3 +79,24 @@ export async function readSessionId(request) {
     return null;
   }
 }
+
+// One-time email sign-in links: "link.<customerId>.<nonce>.<expiresMs>.<hmac>".
+// The nonce must still match the customer's metadata (login_link_nonce), which
+// is cleared on use and replaced by each new request, so a link works once.
+const LINK_TTL_MS = 1000 * 60 * 30; // 30 minutes
+
+export function makeLinkToken(customerId, nonce) {
+  const payload = `link.${customerId}.${nonce}.${Date.now() + LINK_TTL_MS}`;
+  return `${payload}.${sign(payload)}`;
+}
+
+export function readLinkToken(token) {
+  const parts = String(token ?? "").split(".");
+  if (parts.length !== 5 || parts[0] !== "link") return null;
+  const [, customerId, nonce, expires, sig] = parts;
+  if (!/^cus_[A-Za-z0-9]+$/.test(customerId) || !/^[a-f0-9]{16,64}$/.test(nonce)) return null;
+  if (!(Number(expires) > Date.now())) return null;
+  const expected = sign(`link.${customerId}.${nonce}.${expires}`);
+  if (sig.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+  return { customerId, nonce };
+}

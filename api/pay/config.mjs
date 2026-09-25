@@ -1,11 +1,11 @@
 import { json } from "../_lib/session.mjs";
 import { isTestMode } from "../_lib/stripe.mjs";
 
-// Public settings the sign-in screen needs. The email route is Stripe's own
-// customer-portal login page: Stripe emails the client a sign-in link.
+// Public settings the sign-in screen needs. "emailSignIn": clients can ask for a
+// one-time sign-in link by email (our own, sent through Resend).
 export async function GET() {
   return json({
-    emailLoginUrl: process.env.STRIPE_PORTAL_LOGIN_URL || null,
+    emailSignIn: Boolean(process.env.RESEND_API_KEY),
     testMode: isTestMode(),
   });
 }

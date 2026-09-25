@@ -196,7 +196,7 @@
 
     <form class="panel" id="email-form" novalidate hidden>
       <h2>Get a sign-in link by email</h2>
-      <p class="hint">Stripe, my payment processor, will email you a secure link to your billing page, where you can see invoices and update your payment method.</p>
+      <p class="hint">I'll email you a link that signs you in to this page. It works once and expires in 30 minutes.</p>
       <div class="row">
         <div class="field">
           <label for="email">Email address</label>
@@ -449,7 +449,8 @@
     show("account");
   }
 
-  var config = { emailLoginUrl: null, testMode: false };
+  var config = { emailSignIn: false, testMode: false };
+  var linkError = "";
   var startMode = false;
 
   async function load() {
@@ -458,9 +459,10 @@
     var acct = results[1];
     if (acct.ok) return renderAccount(acct.data);
     markTest(config.testMode);
-    var hasEmail = !!config.emailLoginUrl;
+    var hasEmail = !!config.emailSignIn;
     $("email-form").hidden = !hasEmail;
     $("email-divider").hidden = !hasEmail;
+    if (linkError) { $("email-msg").className = "msg err"; $("email-msg").textContent = linkError; linkError = ""; }
     if (acct.status !== 401) $("code-msg").textContent = (acct.data && acct.data.error) || "Something went wrong loading your account.";
     show("signin");
   }
@@ -482,15 +484,24 @@
     load();
   });
 
-  $("email-form").addEventListener("submit", function (e) {
+  $("email-form").addEventListener("submit", async function (e) {
     e.preventDefault();
     var email = $("email").value.trim();
+    var msg = $("email-msg");
+    var btn = $("email-form").querySelector("button");
+    msg.className = "msg err";
+    msg.textContent = "";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      $("email-msg").textContent = "Enter the email address I send your invoices to.";
+      msg.textContent = "Enter the email address I send your invoices to.";
       $("email").focus();
       return;
     }
-    window.location.href = config.emailLoginUrl + "?prefilled_email=" + encodeURIComponent(email);
+    btn.disabled = true;
+    var r = await api("/api/pay/email-link", { method: "POST", body: JSON.stringify({ email: email }) });
+    btn.disabled = false;
+    if (!r.ok) { msg.textContent = (r.data && r.data.error) || "Couldn't send a link. Try again in a minute."; return; }
+    msg.className = "msg ok";
+    msg.textContent = r.data.message;
   });
 
   $("manage-btn").addEventListener("click", async function () {
@@ -522,7 +533,23 @@
     history.replaceState(null, "", window.location.pathname);
   }
 
+  // An emailed sign-in link (#link=…): trade it for a session. Returns true if one was present.
+  async function useLinkFromHash() {
+    var hashMatch = /^#link=([A-Za-z0-9_.\-]+)$/.exec(window.location.hash);
+    if (!hashMatch) return false;
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+    var lr = await api("/api/pay/link-login", { method: "POST", body: JSON.stringify({ token: hashMatch[1] }) });
+    if (!lr.ok) linkError = (lr.data && lr.data.error) || "That sign-in link didn't work. Enter your email below to get a new one.";
+    return true;
+  }
+  // Link pasted into a tab that already has this page open: no reload happens.
+  window.addEventListener("hashchange", async function () {
+    if (await useLinkFromHash()) { show("loading"); load(); }
+  });
+
   (async function () {
+    await useLinkFromHash();
+
     // Back from paying the first month: apply the plan before showing the account.
     var session = params.get("started");
     if (session) {

@@ -1,17 +1,18 @@
 // Transactional email through Resend's REST API (no SDK). Sends as EMAIL_FROM,
 // default "Alexander Schottky <alex@schottky.com>"; replies go to the same inbox.
 // Every client email is blind-copied to EMAIL_BCC (default alex@schottky.com) so
-// I keep a record of exactly what each client was sent. Set EMAIL_BCC to "" to stop.
+// I keep a record of exactly what each client was sent. Set EMAIL_BCC to "" to stop;
+// pass bcc: false for mail that shouldn't be copied (one-time sign-in links).
 
 const SITE = "https://schottky.com";
 
-export async function sendEmail({ to, subject, text, html, idempotencyKey }) {
+export async function sendEmail({ to, subject, text, html, idempotencyKey, bcc: copyMe = true }) {
   const key = process.env.RESEND_API_KEY;
   if (!key) throw new Error("RESEND_API_KEY is not set");
   const from = process.env.EMAIL_FROM || "Alexander Schottky <alex@schottky.com>";
   const headers = { Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
   if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
-  const copy = (process.env.EMAIL_BCC ?? "alex@schottky.com").trim();
+  const copy = copyMe ? (process.env.EMAIL_BCC ?? "alex@schottky.com").trim() : "";
   const bcc = copy && copy.toLowerCase() !== String(to).toLowerCase() ? [copy] : undefined;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -70,7 +71,7 @@ export function inviteEmail({ name, code, nextCharge, hasAutopay, pending, body 
     "",
     message,
     "",
-    "If you ever lose the code, use the email option on that page and my payment processor, Stripe, will email you a sign-in link.",
+    "If you ever lose the code, use the email option on that page and I'll email you a one-time sign-in link.",
     "",
     "Questions? Just reply to this email.",
   ].join("\n");
@@ -83,9 +84,30 @@ export function inviteEmail({ name, code, nextCharge, hasAutopay, pending, body 
 <p style="margin:0 0 6px;font-size:13px;color:#4a4f56">Your client code</p>
 <p style="margin:0 0 20px;font-family:ui-monospace,Menlo,monospace;font-size:20px;letter-spacing:.08em;background:#f1ede5;border-radius:6px;padding:10px 14px;display:inline-block">${esc(code)}</p>
 ${paragraphs(message)}
-<p style="margin:0 0 16px;color:#4a4f56;font-size:14px">If you ever lose the code, use the email option on that page and my payment processor, Stripe, will email you a sign-in link.</p>
+<p style="margin:0 0 16px;color:#4a4f56;font-size:14px">If you ever lose the code, use the email option on that page and I'll email you a one-time sign-in link.</p>
 <p style="margin:0">Questions? Just reply to this email.</p>
 </div></body></html>`;
 
   return { subject: "Your billing page and client code", text, html, body: message, suggested };
+}
+
+// One-time sign-in link for /payments (no code needed). Not copied to me.
+export function signInEmail({ name, url }) {
+  const first = String(name || "").trim().split(/\s+/)[0] || "there";
+  const text = [
+    `Hi ${first},`,
+    "",
+    "Here's your link to sign in to your billing page. It works once and expires in 30 minutes:",
+    url,
+    "",
+    "If you didn't ask for this, you can ignore this email; nothing changes.",
+  ].join("\n");
+  const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#faf8f4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;color:#1c1e21;font-size:16px;line-height:1.6">
+<div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e2dcd0;border-radius:10px;padding:28px">
+<p style="margin:0 0 16px">Hi ${esc(first)},</p>
+<p style="margin:0 0 20px">Here's your link to sign in to your billing page. It works once and expires in 30 minutes.</p>
+<p style="margin:0 0 20px"><a href="${esc(url)}" style="display:inline-block;background:#1f5c48;color:#fff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:6px">Sign in to schottky.com/payments</a></p>
+<p style="margin:0;color:#4a4f56;font-size:14px">If you didn't ask for this, you can ignore this email; nothing changes.</p>
+</div></body></html>`;
+  return { subject: "Your sign-in link for schottky.com/payments", text, html };
 }
