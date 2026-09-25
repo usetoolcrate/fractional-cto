@@ -378,7 +378,7 @@
         navigator.clipboard && navigator.clipboard.writeText(r.data.code).then(function () { copy.textContent = "Copied"; }, function () {});
       } });
       out.appendChild(el("div", { class: "codebox" }, [el("code", { text: r.data.code }), copy]));
-      if (r.data.emailed) { msg.className = "msg ok"; msg.textContent = "Invite emailed to " + r.data.to + ". The previous code no longer works."; }
+      if (r.data.emailed) { msg.className = "msg ok"; msg.textContent = "Invite emailed to " + r.data.to + (r.data.copiedTo ? ". A copy went to " + r.data.copiedTo : "") + ". The previous code no longer works."; }
       else if (r.data.emailError) { msg.textContent = "The email didn't send. " + r.data.emailError; }
       else { msg.className = "msg ok"; msg.textContent = "New code is live. The previous code no longer works."; }
     }

@@ -91,8 +91,9 @@ async function issueCode({ id, send }, idem) {
     hasAutopay: Boolean(account?.autopay),
     pending: account?.pending,
   });
+  let sent;
   try {
-    await sendEmail({ to: customer.email, ...mail, idempotencyKey: idem("invite") });
+    sent = await sendEmail({ to: customer.email, ...mail, idempotencyKey: idem("invite") });
   } catch (err) {
     // The new code is already live; show it so it can be sent by hand.
     const notReady = /not verified|domain/i.test(err.message);
@@ -105,7 +106,7 @@ async function issueCode({ id, send }, idem) {
     });
   }
   await adminStripe("POST", `customers/${id}`, { metadata: { invite_sent_at: String(now) } });
-  return json({ code, emailed: true, to: customer.email });
+  return json({ code, emailed: true, to: customer.email, copiedTo: sent?.copiedTo ?? null });
 }
 
 async function createPlan({ id, start, phases, mode }, idem) {

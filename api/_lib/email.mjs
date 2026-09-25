@@ -1,5 +1,7 @@
 // Transactional email through Resend's REST API (no SDK). Sends as EMAIL_FROM,
 // default "Alexander Schottky <alex@schottky.com>"; replies go to the same inbox.
+// Every client email is blind-copied to EMAIL_BCC (default alex@schottky.com) so
+// I keep a record of exactly what each client was sent. Set EMAIL_BCC to "" to stop.
 
 const SITE = "https://schottky.com";
 
@@ -9,14 +11,16 @@ export async function sendEmail({ to, subject, text, html, idempotencyKey }) {
   const from = process.env.EMAIL_FROM || "Alexander Schottky <alex@schottky.com>";
   const headers = { Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
   if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+  const copy = (process.env.EMAIL_BCC ?? "alex@schottky.com").trim();
+  const bcc = copy && copy.toLowerCase() !== String(to).toLowerCase() ? [copy] : undefined;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers,
-    body: JSON.stringify({ from, to: [to], subject, text, html, reply_to: process.env.EMAIL_REPLY_TO || "alex@schottky.com" }),
+    body: JSON.stringify({ from, to: [to], bcc, subject, text, html, reply_to: process.env.EMAIL_REPLY_TO || "alex@schottky.com" }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.message || `Email failed (${res.status})`);
-  return data.id;
+  return { id: data.id, copiedTo: bcc?.[0] ?? null };
 }
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
