@@ -1,5 +1,6 @@
 // One client: GET ?id=cus_… for details; POST { id, action, … } to act on them.
-// Actions: code (new sign-in code, optionally emailed), plan (create a phased
+// Actions: code (new sign-in code, returned with a suggested invite), invite
+// (send that invite, body editable first), plan (create a phased
 // plan: starts on a fixed date, or when the client makes the first payment),
 // plan-cancel (only before any charge), addon-add / addon-remove, request
 // (one-off invoice Stripe emails).
@@ -49,7 +50,9 @@ export async function POST(request) {
   try {
     switch (body.action) {
       case "code":
-        return await issueCode(body, idem);
+        return await issueCode(body);
+      case "invite":
+        return await sendInvite(body, idem);
       case "plan":
         return await createPlan(body, idem);
       case "plan-cancel":
@@ -69,44 +72,54 @@ export async function POST(request) {
   }
 }
 
-async function issueCode({ id, send }, idem) {
+// Issues a new code and hands back the invite it would send. Nothing is emailed
+// here, so the wording can be edited first; "invite" below does the sending.
+async function issueCode({ id }) {
   const customer = await adminStripe("GET", `customers/${id}`);
-  const initials = (customer.name || "")
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 3);
-  const code = generateCode(customer.metadata?.portal_prefix || initials);
+  const code = generateCode();
   const now = Math.floor(Date.now() / 1000);
   await adminStripe("POST", `customers/${id}`, {
     metadata: { portal: "schottky", portal_code_sha256: hashCode(code), code_issued_at: String(now) },
   });
-  if (!send) return json({ code, emailed: false });
+  const draft = await composeInvite(id, customer, code);
+  return json({ code, to: customer.email || null, subject: draft.subject, body: draft.body });
+}
 
+async function composeInvite(id, customer, code, body) {
   const account = await loadAccount(id, { admin: true });
-  const mail = inviteEmail({
+  return inviteEmail({
     name: customer.name,
     code,
     nextCharge: account?.nextCharge,
     hasAutopay: Boolean(account?.autopay),
     pending: account?.pending,
+    body,
   });
+}
+
+async function sendInvite({ id, code, body }, idem) {
+  const customer = await adminStripe("GET", `customers/${id}`);
+  if (!customer.email) return json({ error: "This client has no email address in Stripe." }, 400);
+  // The browser hands the code back because only its hash is stored. Check it
+  // against that hash so an invite can never carry a code that won't sign in.
+  if (!code || customer.metadata?.portal_code_sha256 !== hashCode(code)) {
+    return json({ error: "That code is no longer the current one. Issue a new code, then send." }, 409);
+  }
+  const mail = await composeInvite(id, customer, code, body);
   let sent;
   try {
     sent = await sendEmail({ to: customer.email, ...mail, idempotencyKey: idem("invite") });
   } catch (err) {
-    // The new code is already live; show it so it can be sent by hand.
+    // The code is already live; say so, so it can be passed on by hand.
     const notReady = /not verified|domain/i.test(err.message);
     return json({
-      code,
-      emailed: false,
-      emailError: notReady
-        ? "Sending from schottky.com isn't switched on yet: the email service is still verifying the domain. The code above is live, so send it yourself for now."
-        : `${err.message} The code above is live, so send it yourself.`,
-    });
+      error: notReady
+        ? "Sending from schottky.com isn't switched on yet: the email service is still verifying the domain. The code is live, so send it yourself for now."
+        : `${err.message} The code is live, so send it yourself.`,
+    }, 502);
   }
-  await adminStripe("POST", `customers/${id}`, { metadata: { invite_sent_at: String(now) } });
-  return json({ code, emailed: true, to: customer.email, copiedTo: sent?.copiedTo ?? null });
+  await adminStripe("POST", `customers/${id}`, { metadata: { invite_sent_at: String(Math.floor(Date.now() / 1000)) } });
+  return json({ emailed: true, to: customer.email, copiedTo: sent?.copiedTo ?? null });
 }
 
 async function createPlan({ id, start, phases, mode }, idem) {

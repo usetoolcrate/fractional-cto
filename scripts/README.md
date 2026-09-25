@@ -1,6 +1,6 @@
 # Client payments (schottky.com/payments)
 
-Clients sign in with a client code (or get a sign-in link from Stripe by email), see their plan, next charge and invoices, and set up autopay by card or bank account (ACH). Stripe is the only database: codes are stored as a SHA-256 hash in the customer's metadata.
+Clients sign in with a client code (or get a sign-in link from Stripe by email), see their plan, next charge and invoices, and set up autopay by card or bank account (ACH). Stripe is the only database: codes are stored as a SHA-256 hash in the customer's metadata. A code is six characters from a 32-character alphabet with no I, L, O or U, so it reads aloud cleanly.
 
 - Page: `payments/index.html`
 - Functions: `api/pay/*.mjs` (client), `api/admin/*.mjs` (admin); shared code in `api/_lib/`. No npm dependencies: Stripe and Resend REST via `fetch`, Stripe API version pinned in `api/_lib/stripe.mjs`
@@ -34,7 +34,7 @@ This is safe to re-run. It creates:
 
 1. Create the client and a code. The code is printed once. Re-running issues a new code and the old one stops working.
    ```bash
-   node --env-file=.env scripts/new-client.mjs --name "Client Name" --email client@example.com --prefix ABC
+   node --env-file=.env scripts/new-client.mjs --name "Client Name" --email client@example.com
    ```
 2. Put them on a plan that runs itself. Each phase is `<price lookup key>:<months>`; the last phase may be `ongoing`. For a new rate, first add a price with a new lookup key in Stripe (or extend `PRICES` in `stripe-setup.mjs`).
    ```bash

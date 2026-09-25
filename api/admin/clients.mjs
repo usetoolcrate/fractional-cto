@@ -50,7 +50,6 @@ export async function POST(request) {
   const email = String(body.email ?? "").trim().toLowerCase();
   if (!name) return json({ error: "Enter the client's name." }, 400);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "Enter a valid email address." }, 400);
-  const prefix = String(body.prefix ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
 
   try {
     // Exact email list (not search) so a client created seconds ago is found.
@@ -60,7 +59,7 @@ export async function POST(request) {
     const customer = await adminStripe(
       "POST",
       "customers",
-      { name, email, metadata: { portal: "schottky", portal_prefix: prefix } },
+      { name, email, metadata: { portal: "schottky" } },
       { idempotencyKey: body.requestId ? `client-${body.requestId}` : undefined },
     );
     return json({ id: customer.id, existed: false }, 201);

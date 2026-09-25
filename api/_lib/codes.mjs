@@ -1,4 +1,4 @@
-// Client access codes, e.g. "WFD-7K3MQ-9P2XA". Only a SHA-256 hash is stored,
+// Client access codes, e.g. "7K3MQ9". Only a SHA-256 hash is stored,
 // in the Stripe customer's metadata (portal_code_sha256) — Stripe is the only
 // database. Codes are matched case-insensitively and ignore spaces/dashes.
 import crypto from "node:crypto";
@@ -14,11 +14,11 @@ export function hashCode(code) {
   return crypto.createHash("sha256").update(normalizeCode(code)).digest("hex");
 }
 
-// 10 random characters = 50 bits, plus an optional readable client prefix.
-export function generateCode(prefix = "") {
-  const bytes = crypto.randomBytes(10);
-  const chars = Array.from(bytes, (b) => ALPHABET[b % 32]).join("");
-  const body = `${chars.slice(0, 5)}-${chars.slice(5)}`;
-  const p = normalizeCode(prefix).slice(0, 4);
-  return p ? `${p}-${body}` : body;
+// Six characters short enough to read out over the phone. 32^6 is about 1.07
+// billion codes; 256 divides evenly by 32, so the modulo below is unbiased.
+export const CODE_LENGTH = 6;
+
+export function generateCode() {
+  const bytes = crypto.randomBytes(CODE_LENGTH);
+  return Array.from(bytes, (b) => ALPHABET[b % 32]).join("");
 }

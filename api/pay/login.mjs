@@ -12,7 +12,8 @@ export async function POST(request) {
     return json({ error: "Enter your client code." }, 400);
   }
   const code = normalizeCode(body?.code);
-  if (code.length < 8 || code.length > 20) {
+  // Codes are 6 characters now; the upper bound keeps older, longer ones working.
+  if (code.length < 6 || code.length > 20) {
     return json({ error: NO_MATCH }, 401);
   }
 

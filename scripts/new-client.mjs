@@ -1,5 +1,5 @@
 // Create (or find) a client in Stripe and issue a new /payments sign-in code.
-//   node --env-file=.env scripts/new-client.mjs --name "Dyllan Dale" --email dyllan@example.com --prefix WFD
+//   node --env-file=.env scripts/new-client.mjs --name "Dyllan Dale" --email dyllan@example.com
 // The code is printed once and only its hash is stored. Re-running for the same
 // email issues a fresh code and the old one stops working.
 import { parseArgs } from "node:util";
@@ -10,17 +10,16 @@ const { values } = parseArgs({
   options: {
     name: { type: "string" },
     email: { type: "string" },
-    prefix: { type: "string", default: "" },
     "test-clock": { type: "string" },
   },
 });
 if (!values.name || !values.email) {
-  console.error('Usage: --name "Client Name" --email client@example.com [--prefix ABC]');
+  console.error('Usage: --name "Client Name" --email client@example.com');
   process.exit(1);
 }
 
 const email = values.email.trim().toLowerCase();
-const code = generateCode(values.prefix);
+const code = generateCode();
 const metadata = { portal: "schottky", portal_code_sha256: hashCode(code), code_issued_at: String(Math.floor(Date.now() / 1000)) };
 
 const found = values["test-clock"]

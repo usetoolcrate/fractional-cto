@@ -51,6 +51,9 @@
   label.f{display:flex;flex-direction:column;gap:4px;font-size:.78rem;font-weight:600;color:var(--ink-soft);min-width:0}
   input.i{border:1px solid var(--line);border-radius:6px;background:var(--card);padding:8px 10px;font-size:.95rem;color:var(--ink);width:100%;min-width:0}
   input.i:focus{border-color:var(--accent)}
+  textarea.i{border:1px solid var(--line);border-radius:6px;background:var(--card);padding:10px 12px;font:inherit;font-size:.95rem;line-height:1.55;color:var(--ink);width:100%;min-width:0;resize:vertical}
+  textarea.i:focus{border-color:var(--accent);outline:none}
+  .draft{margin-top:14px;display:grid;gap:10px}
   .msg{font-size:.88rem;min-height:1.3em}
   .msg:empty{display:none}
   .msg.err{color:var(--alert)}
@@ -185,7 +188,6 @@
       <h3 style="font-size:1.05rem">New client</h3>
       <label class="f">Name<input class="i" id="nc-name" autocomplete="off" required></label>
       <label class="f">Billing email<input class="i" id="nc-email" type="email" autocomplete="off" required></label>
-      <label class="f">Code prefix (optional)<input class="i" id="nc-prefix" maxlength="4" autocomplete="off" placeholder="WFD" style="text-transform:uppercase"></label>
       <button class="btn" type="submit">Add client</button>
       <p class="msg err" id="nc-msg" role="alert"></p>
     </form>
@@ -368,26 +370,58 @@
       : "No code issued yet.";
     var out = el("div", {});
     var msg = el("p", { class: "msg err", role: "alert" });
-    async function issue(send, btn) {
+
+    function codeBox(code) {
+      var copy = el("button", { class: "btn ghost small", type: "button", text: "Copy", onclick: function () {
+        navigator.clipboard && navigator.clipboard.writeText(code).then(function () { copy.textContent = "Copied"; }, function () {});
+      } });
+      return el("div", { class: "codebox" }, [el("code", { text: code }), copy]);
+    }
+
+    // The code is live the moment it's issued; sending is a separate step so the
+    // message can be read and edited first.
+    function draftEditor(d) {
+      var ta = el("textarea", { class: "i", rows: "7", "aria-label": "Invite message" });
+      ta.value = d.body || "";
+      var send = el("button", { class: "btn", type: "button", text: "Send invite", onclick: async function (e) {
+        var b = e.currentTarget;
+        b.disabled = true; b.textContent = "Sending…"; msg.textContent = ""; msg.className = "msg err";
+        var r = await api("/api/admin/client", { id: a.id, action: "invite", code: d.code, body: ta.value, requestId: rid() });
+        if (!r.ok) { b.disabled = false; b.textContent = "Send invite"; msg.textContent = r.data.error || "The invite didn't send."; return; }
+        wrap.remove();
+        msg.className = "msg ok";
+        msg.textContent = "Invite emailed to " + r.data.to + (r.data.copiedTo ? ". A copy went to " + r.data.copiedTo : "") + ".";
+      } });
+      var wrap = el("div", { class: "draft" }, [
+        el("p", { class: "hint", text: d.to ? "To " + d.to + " — subject: " + d.subject : "No email address on file for this client, so this can't be sent." }),
+        ta,
+        el("p", { class: "hint", text: "Edit the message if you like. The greeting, the sign-in link, the code and the sign-off are added around it." }),
+        el("div", { class: "row" }, [
+          d.to ? send : null,
+          el("button", { class: "btn ghost", type: "button", text: "Don't send", onclick: function () { wrap.remove(); } }),
+        ]),
+      ]);
+      return wrap;
+    }
+
+    async function issue(withInvite, btn) {
       btn.disabled = true; msg.textContent = ""; msg.className = "msg err";
-      var r = await api("/api/admin/client", { id: a.id, action: "code", send: send, requestId: rid() });
+      var r = await api("/api/admin/client", { id: a.id, action: "code" });
       btn.disabled = false;
       out.textContent = "";
       if (!r.ok) { msg.textContent = r.data.error || "Failed."; return; }
-      var copy = el("button", { class: "btn ghost small", type: "button", text: "Copy", onclick: function () {
-        navigator.clipboard && navigator.clipboard.writeText(r.data.code).then(function () { copy.textContent = "Copied"; }, function () {});
-      } });
-      out.appendChild(el("div", { class: "codebox" }, [el("code", { text: r.data.code }), copy]));
-      if (r.data.emailed) { msg.className = "msg ok"; msg.textContent = "Invite emailed to " + r.data.to + (r.data.copiedTo ? ". A copy went to " + r.data.copiedTo : "") + ". The previous code no longer works."; }
-      else if (r.data.emailError) { msg.textContent = "The email didn't send. " + r.data.emailError; }
-      else { msg.className = "msg ok"; msg.textContent = "New code is live. The previous code no longer works."; }
+      out.appendChild(codeBox(r.data.code));
+      msg.className = "msg ok";
+      msg.textContent = "New code is live. The previous code no longer works.";
+      if (withInvite) out.appendChild(draftEditor(r.data));
     }
+
     return el("section", { class: "panel sec" }, [
       el("h2", { text: "Access to /payments" }),
       el("p", { class: "hint", text: status + " Codes are stored only as a fingerprint, so issuing one always makes a new code." }),
       el("div", { class: "row" }, [
-        el("button", { class: "btn", type: "button", text: "Email invite with new code", onclick: function (e) { issue(true, e.currentTarget); } }),
-        el("button", { class: "btn ghost", type: "button", text: "New code, don't email", onclick: function (e) { issue(false, e.currentTarget); } }),
+        el("button", { class: "btn", type: "button", text: "New code + email invite", onclick: function (e) { issue(true, e.currentTarget); } }),
+        el("button", { class: "btn ghost", type: "button", text: "New code only", onclick: function (e) { issue(false, e.currentTarget); } }),
       ]),
       out, msg,
     ]);
@@ -774,10 +808,10 @@
     e.preventDefault();
     $("nc-msg").textContent = "";
     var name = $("nc-name").value.trim(), email = $("nc-email").value.trim();
-    var r = await api("/api/admin/clients", { name: name, email: email, prefix: $("nc-prefix").value, requestId: ncReq });
+    var r = await api("/api/admin/clients", { name: name, email: email, requestId: ncReq });
     if (!r.ok) { $("nc-msg").textContent = r.data.error || "Couldn't add the client."; return; }
     ncReq = rid();
-    $("nc-name").value = ""; $("nc-email").value = ""; $("nc-prefix").value = "";
+    $("nc-name").value = ""; $("nc-email").value = "";
     await loadList();
     // Stripe's search index can lag a minute behind a new client; show it now.
     if (!state.clients.some(function (c) { return c.id === r.data.id; })) {
