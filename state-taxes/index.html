@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>State Tax Burden</title>
+<meta name="description" content="Enter your yearly income and see what you'd pay in federal, state income, property, sales and vehicle taxes in every US state.">
+<link rel="canonical" href="https://schottky.com/state-taxes/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://schottky.com/state-taxes/">
+<meta property="og:title" content="What would I pay in each state?">
+<meta property="og:description" content="Type your income and compare income, property, sales, vehicle and federal taxes across all 50 states + DC.">
+<meta property="og:image" content="https://schottky.com/state-taxes/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="What would I pay in each state?">
+<meta name="twitter:description" content="Type your income and compare income, property, sales, vehicle and federal taxes across all 50 states + DC.">
+<meta name="twitter:image" content="https://schottky.com/state-taxes/og-image.png">
+<meta name="theme-color" content="#2a78d6">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232a78d6'/><text x='16' y='23' font-size='19' font-family='Arial' font-weight='700' text-anchor='middle' fill='white'>$</text></svg>">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f6f5f2; --surface:#fcfcfb; --surface-2:#f0efec; --border:#e2e0db;
+  --text:#0b0b0b; --text-2:#52514e; --text-3:#7a7974;
+  --accent:#2a78d6;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --fed:#b9b7b0;
+  --seq0:#cde2fb; --seq1:#9ec5f4; --seq2:#6da7ec; --seq3:#3987e5; --seq4:#256abf; --seq5:#184f95; --seq6:#0d366b;
+  --good:#0ca30c; --bad:#d03b3b;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --bg:#121211; --surface:#1a1a19; --surface-2:#262624; --border:#33332f;
+    --text:#ffffff; --text-2:#c3c2b7; --text-3:#8f8e86;
+    --accent:#3987e5;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --fed:#5c5b56;
+    --seq0:#104281; --seq1:#184f95; --seq2:#1c5cab; --seq3:#2a78d6; --seq4:#5598e7; --seq5:#86b6ef; --seq6:#cde2fb;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --surface:#1a1a19; --surface-2:#262624; --border:#33332f;
+  --text:#ffffff; --text-2:#c3c2b7; --text-3:#8f8e86;
+  --accent:#3987e5;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --fed:#5c5b56;
+  --seq0:#104281; --seq1:#184f95; --seq2:#1c5cab; --seq3:#2a78d6; --seq4:#5598e7; --seq5:#86b6ef; --seq6:#cde2fb;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1100px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:28px;line-height:1.2;margin:0 0 6px;letter-spacing:-.01em}
+.sub{color:var(--text-2);margin:0 0 24px;max-width:680px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+.controls{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:20px;align-items:start}
+label{display:block;font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:6px}
+.income-field{position:relative}
+.income-field span{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:22px;color:var(--text-3)}
+input,select{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 11px;width:100%}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+#income{font-size:24px;font-weight:650;padding:12px 14px 12px 32px;font-variant-numeric:tabular-nums}
+.row2{display:flex;gap:8px}
+.row2>*{flex:1}
+.hint{font-size:12px;color:var(--text-3);margin-top:5px}
+.check{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--text-2);margin-top:10px;font-weight:500}
+.check input{width:auto;margin:0}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.tile .k{font-size:12px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em}
+.tile .v{font-size:26px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.tile .d{font-size:13px;color:var(--text-2)}
+h2{font-size:17px;margin:0 0 4px}
+.section-sub{font-size:13px;color:var(--text-2);margin:0 0 14px}
+/* tile map */
+.map{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;max-width:760px;margin:0 auto}
+.st{aspect-ratio:1;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:13px;cursor:default;position:relative;border:2px solid transparent;transition:transform .1s}
+.st small{font-weight:500;font-size:10px;opacity:.85;font-variant-numeric:tabular-nums}
+.st:hover{transform:scale(1.08);z-index:2}
+.st.mine{border-color:var(--text)}
+.scale{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:14px;font-size:12px;color:var(--text-2)}
+.scale .bar{display:flex;gap:2px}
+.scale .bar i{width:28px;height:10px;border-radius:2px;display:block}
+/* table */
+.table-head{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--text-2);flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.tscroll{overflow-x:auto;margin:0 -20px;padding:0 20px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;min-width:1000px}
+th{font-size:12px;font-weight:600;color:var(--text-3);text-align:right;padding:8px 8px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--text)}
+th.l,td.l{text-align:left}
+th.sorted{color:var(--text)}
+td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--border);font-size:14px;white-space:nowrap}
+tr.mine td{background:var(--surface-2);font-weight:600}
+td.rank{color:var(--text-3);width:32px}
+td.total{font-weight:650}
+td.pct{color:var(--text-2)}
+.delta.up{color:var(--bad)} .delta.down{color:var(--good)}
+.stack{display:flex;gap:2px;height:12px;min-width:140px;width:100%}
+.stack i{display:block;height:100%}
+.stack i:first-child{border-radius:4px 0 0 4px}
+.stack i:last-child{border-radius:0 4px 4px 0}
+.stack i:only-child{border-radius:4px}
+td.barcell{width:18%;padding-left:14px}
+.tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;box-shadow:0 6px 24px rgba(0,0,0,.18);z-index:50;min-width:190px;display:none;font-variant-numeric:tabular-nums}
+.tip b{display:block;margin-bottom:4px}
+.tip .r{display:flex;justify-content:space-between;gap:16px;color:var(--text-2)}
+.tip .r i{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:6px}
+.tip .t{border-top:1px solid var(--border);margin-top:5px;padding-top:5px;color:var(--text);font-weight:650}
+.notes{font-size:13px;color:var(--text-2);margin-top:20px}
+.notes summary{cursor:pointer;font-weight:600;color:var(--text)}
+.notes li{margin:4px 0}
+.gap{height:20px}
+.foot{font-size:13px;color:var(--text-3);text-align:center;margin-top:28px}
+.foot a{color:var(--text-2)}
+@media (max-width:760px){
+  .controls{grid-template-columns:1fr}
+  .tiles{grid-template-columns:1fr}
+  .st{font-size:10px;border-radius:4px}
+  .st small{display:none}
+  .map{gap:2px}
+  h1{font-size:23px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>What would I pay in each state?</h1>
+  <p class="sub">Type your yearly income. This estimates the state income, property, sales and vehicle taxes you'd pay in all 50 states + DC, plus your federal taxes, ranked cheapest to most expensive. Everything runs in your browser and nothing is sent anywhere.</p>
+
+  <div class="card controls">
+    <div>
+      <label for="income">Yearly household income</label>
+      <div class="income-field"><span>$</span><input id="income" inputmode="numeric" autocomplete="off" value="85,000"></div>
+      <div class="hint">Single filer, wage income.</div>
+      <label class="check"><input type="checkbox" id="fed" checked> Include federal income tax + Social Security/Medicare</label>
+      <label class="check" style="margin-top:6px"><input type="checkbox" id="local" checked> Include typical local/county income tax (IN, KY, MD, OH, PA)</label>
+      <div class="gap" style="height:14px"></div>
+      <label for="spendMode">Spending subject to sales tax</label>
+      <div class="row2">
+        <select id="spendMode" aria-label="Taxable spending mode"><option value="auto">Typical for my income</option><option value="custom">My own amount</option></select>
+        <input id="spend" inputmode="numeric" value="25,000" aria-label="Taxable spending per year">
+      </div>
+      <div class="hint" id="spendHint"></div>
+    </div>
+    <div>
+      <label for="homeMode">Home value for property tax</label>
+      <select id="homeMode">
+        <option value="income">Based on my income</option>
+        <option value="median">Each state's median home</option>
+        <option value="custom">Same home value everywhere</option>
+        <option value="rent">I rent (skip property tax)</option>
+      </select>
+      <div class="gap" style="height:8px"></div>
+      <div id="homeExtra"></div>
+    </div>
+    <div>
+      <label>Vehicles</label>
+      <div class="row2">
+        <select id="cars" aria-label="Number of vehicles">
+          <option value="0">0 cars</option><option value="1" selected>1 car</option><option value="2">2 cars</option><option value="3">3 cars</option>
+        </select>
+        <input id="carValue" inputmode="numeric" value="30,000" aria-label="Value per vehicle">
+      </div>
+      <div class="hint">Value per vehicle. Annual registration plus any yearly vehicle property/excise tax.</div>
+      <div class="gap" style="height:8px"></div>
+      <label for="mine">Compare against</label>
+      <select id="mine"><option value="">No state picked</option></select>
+    </div>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="card">
+    <h2 id="mapTitle">Total yearly taxes</h2>
+    <p class="section-sub">Darker means you'd pay more. Hover a state for the breakdown.</p>
+    <div class="map" id="map"></div>
+    <div class="scale" id="scale"></div>
+  </div>
+
+  <div class="gap"></div>
+
+  <div class="card">
+    <div class="table-head">
+      <div><h2>Every state, ranked</h2><p class="section-sub" style="margin:0">Click a column header to sort.</p></div>
+      <div class="legend">
+        <span><i style="background:var(--s1)"></i>Income tax</span>
+        <span><i style="background:var(--s2)"></i>Property tax</span>
+        <span><i style="background:var(--s3)"></i>Vehicle tax</span>
+        <span><i style="background:var(--s4)"></i>Sales tax</span>
+        <span id="fedLegend"><i style="background:var(--fed)"></i>Federal</span>
+      </div>
+    </div>
+    <div class="tscroll"><table>
+      <thead><tr id="thead"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+
+    <details class="notes">
+      <summary>How these numbers are estimated</summary>
+      <ul>
+        <li><b>Income tax:</b> 2025 state brackets for a single filer with the state's standard deduction / personal exemption (or the federal $15,750 standard deduction where the state starts from federal taxable income). Credits, itemizing, retirement income rules and city taxes such as NYC, Philadelphia, Detroit or Kansas City aren't modeled.</li>
+        <li><b>Local income tax:</b> an average county/municipal rate for states where most residents pay one (IN 1.6%, KY 1.5%, MD 3.0%, OH 1.5%, PA 1.0%). Your actual city may be higher or zero.</li>
+        <li><b>Property tax:</b> the state's average effective rate on owner-occupied homes (median taxes paid ÷ median home value, recent Census ACS data) times the home value you chose. Your county can be far above or below the state average. Homestead exemptions are folded into the average rate.</li>
+        <li><b>Vehicle tax:</b> a rough yearly cost per car, made up of registration fees plus an annual ad valorem, excise or ownership tax where the state charges one (for example CT, VA, MO, MS, KS, SC, CO, AZ, MA, ME, NV). One-time sales or title taxes (like Georgia's 7% TAVT) aren't included.</li>
+        <li><b>Sales tax:</b> the combined state + average local rate (Tax Foundation, 2025) applied to your spending on taxable goods. "Typical for my income" assumes roughly 35% of income at $50k, sliding down to about 15% at $800k, because higher earners save more and spend more on untaxed services and housing. Grocery exemptions vary by state and aren't modeled.</li>
+        <li><b>Federal:</b> 2025 federal brackets plus Social Security (6.2% up to $176,100) and Medicare (1.45%, plus 0.9% over $200k). Federal tax isn't identical everywhere: if your state income tax (or sales tax, whichever is larger) plus property tax beats the $15,750 standard deduction, the page itemizes, using the SALT deduction capped at $40,000 (phasing down toward $10,000 above $500k income). Mortgage interest and other deductions aren't included.</li>
+        <li><b>Not included:</b> gas tax, rent, insurance and other living costs. Treat this as a tax comparison, not a full cost-of-living tool, and check numbers for the place you're actually considering before you decide anything.</li>
+      </ul>
+    </details>
+  </div>
+  <p class="foot">Built by <a href="https://schottky.com/">Schottky LLC</a> · Estimates only, not tax advice.</p>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script>
+const F = 15750; // federal standard deduction (single, 2025)
+
+// a: abbr, n: name, b: [[threshold, rate]...] on taxable income, d: deduction/exemption,
+// ph: deduction phase-out {s: start income, r: $ lost per $ over}, cr: flat credit, crph: credit phase-out,
+// loc: typical local income tax rate, p: effective property tax %, h: median home value,
+// vr: yearly vehicle tax as % of value, vf: yearly registration fees
+const STATES = [
+ {a:'AL',n:'Alabama',b:[[0,.02],[500,.04],[3000,.05]],d:4000,p:.38,h:216000,vr:.6,vf:70,st:9.29},
+ {a:'AK',n:'Alaska',b:[],p:1.04,h:336000,vr:0,vf:100,st:1.82},
+ {a:'AZ',n:'Arizona',b:[[0,.025]],d:F,p:.52,h:411000,vr:1.4,vf:35,st:8.38},
+ {a:'AR',n:'Arkansas',b:[[0,0],[5500,.02],[10900,.03],[15600,.034],[25700,.039]],d:2410,p:.57,h:195000,vr:.9,vf:30,st:9.45},
+ {a:'CA',n:'California',b:[[0,.01],[11079,.02],[26264,.04],[41452,.06],[57542,.08],[72724,.093],[371479,.103],[445771,.113],[742953,.123],[1000000,.133]],d:5706,cr:149,p:.71,h:725000,vr:.65,vf:250,st:8.85},
+ {a:'CO',n:'Colorado',b:[[0,.044]],d:F,p:.49,h:556000,vr:1.6,vf:75,st:7.81},
+ {a:'CT',n:'Connecticut',b:[[0,.02],[10000,.045],[50000,.055],[100000,.06],[200000,.065],[250000,.069],[500000,.0699]],d:15000,ph:{s:30000,r:1},p:1.48,h:354000,vr:2.2,vf:60,st:6.35},
+ {a:'DE',n:'Delaware',b:[[0,0],[2000,.022],[5000,.039],[10000,.048],[20000,.052],[25000,.0555],[60000,.066]],d:3250,cr:110,p:.51,h:349000,vr:0,vf:40,st:0},
+ {a:'DC',n:'District of Columbia',b:[[0,.04],[10000,.06],[40000,.065],[60000,.085],[250000,.0925],[500000,.0975],[1000000,.1075]],d:F,p:.57,h:715000,vr:0,vf:115,st:6.5},
+ {a:'FL',n:'Florida',b:[],p:.77,h:387000,vr:0,vf:50,st:7.0},
+ {a:'GA',n:'Georgia',b:[[0,.0519]],d:12000,p:.83,h:309000,vr:0,vf:25,st:7.38},
+ {a:'HI',n:'Hawaii',b:[[0,.014],[9600,.032],[14400,.055],[19200,.064],[24000,.068],[36000,.072],[48000,.076],[125000,.079],[175000,.0825],[225000,.09],[275000,.10],[325000,.11]],d:5544,p:.27,h:833000,vr:0,vf:230,st:4.5},
+ {a:'ID',n:'Idaho',b:[[0,.053]],d:F,p:.47,h:432000,vr:0,vf:70,st:6.03},
+ {a:'IL',n:'Illinois',b:[[0,.0495]],d:2850,p:1.95,h:263000,vr:0,vf:151,st:8.86},
+ {a:'IN',n:'Indiana',b:[[0,.03]],d:1000,loc:.016,p:.75,h:220000,vr:.8,vf:30,st:7.0},
+ {a:'IA',n:'Iowa',b:[[0,.038]],d:F,p:1.37,h:211000,vr:.9,vf:20,st:6.94},
+ {a:'KS',n:'Kansas',b:[[0,.052],[23000,.0558]],d:12765,p:1.26,h:220000,vr:1.9,vf:45,st:8.65},
+ {a:'KY',n:'Kentucky',b:[[0,.04]],d:3270,loc:.015,p:.75,h:210000,vr:1.0,vf:30,st:6.0},
+ {a:'LA',n:'Louisiana',b:[[0,.03]],d:12500,p:.51,h:208000,vr:.1,vf:40,st:10.11},
+ {a:'ME',n:'Maine',b:[[0,.058],[26800,.0675],[63450,.0715]],d:20150,p:1.02,h:300000,vr:1.5,vf:35,st:5.5},
+ {a:'MD',n:'Maryland',b:[[0,.02],[1000,.03],[2000,.04],[3000,.0475],[100000,.05],[125000,.0525],[150000,.055],[250000,.0575],[500000,.0625],[1000000,.065]],d:6550,loc:.03,p:.95,h:410000,vr:0,vf:100,st:6.0},
+ {a:'MA',n:'Massachusetts',b:[[0,.05],[1083150,.09]],d:4400,p:1.04,h:581000,vr:1.2,vf:30,st:6.25},
+ {a:'MI',n:'Michigan',b:[[0,.0425]],d:5800,p:1.17,h:233000,vr:.55,vf:20,st:6.0},
+ {a:'MN',n:'Minnesota',b:[[0,.0535],[32570,.068],[106990,.0785],[198630,.0985]],d:14950,p:1.02,h:316000,vr:1.0,vf:25,st:8.04},
+ {a:'MS',n:'Mississippi',b:[[0,0],[10000,.044]],d:8300,p:.67,h:172000,vr:2.0,vf:15,st:7.06},
+ {a:'MO',n:'Missouri',b:[[0,0],[1313,.02],[2626,.025],[3939,.03],[5252,.035],[6565,.04],[7878,.045],[9191,.047]],d:F,p:.88,h:236000,vr:2.0,vf:40,st:8.39},
+ {a:'MT',n:'Montana',b:[[0,.047],[21100,.059]],d:F,p:.66,h:416000,vr:0,vf:200,st:0},
+ {a:'NE',n:'Nebraska',b:[[0,.0246],[4030,.0351],[24120,.0501],[38870,.052]],d:8600,p:1.50,h:245000,vr:1.4,vf:30,st:6.97},
+ {a:'NV',n:'Nevada',b:[],p:.48,h:434000,vr:1.2,vf:35,st:8.24},
+ {a:'NH',n:'New Hampshire',b:[],p:1.61,h:418000,vr:1.1,vf:45,st:0},
+ {a:'NJ',n:'New Jersey',b:[[0,.014],[20000,.0175],[35000,.035],[40000,.05525],[75000,.0637],[500000,.0897],[1000000,.1075]],d:1000,p:2.08,h:461000,vr:0,vf:70,st:6.6},
+ {a:'NM',n:'New Mexico',b:[[0,.015],[5500,.032],[16500,.043],[33500,.047],[66500,.049],[210000,.059]],d:F,p:.67,h:255000,vr:0,vf:50,st:7.62},
+ {a:'NY',n:'New York',b:[[0,.04],[8500,.045],[11700,.0525],[13900,.055],[80650,.06],[215400,.0685],[1077550,.0965],[5000000,.103],[25000000,.109]],d:8000,p:1.39,h:422000,vr:0,vf:60,st:8.53},
+ {a:'NC',n:'North Carolina',b:[[0,.0425]],d:12750,p:.70,h:300000,vr:.8,vf:45,st:7.0},
+ {a:'ND',n:'North Dakota',b:[[0,0],[48475,.0195],[244825,.025]],d:F,p:.97,h:247000,vr:0,vf:150,st:6.97},
+ {a:'OH',n:'Ohio',b:[[0,0],[26050,.0275],[100000,.03125]],d:0,loc:.015,p:1.36,h:220000,vr:0,vf:60,st:7.24},
+ {a:'OK',n:'Oklahoma',b:[[0,.0025],[1000,.0075],[2500,.0175],[3750,.0275],[4900,.0375],[7200,.0475]],d:7350,p:.81,h:192000,vr:0,vf:90,st:8.99},
+ {a:'OR',n:'Oregon',b:[[0,.0475],[4400,.0675],[11050,.0875],[125000,.099]],d:2835,cr:256,p:.82,h:475000,vr:0,vf:85,st:0},
+ {a:'PA',n:'Pennsylvania',b:[[0,.0307]],d:0,loc:.01,p:1.35,h:252000,vr:0,vf:45,st:6.34},
+ {a:'RI',n:'Rhode Island',b:[[0,.0375],[79900,.0475],[181650,.0599]],d:16000,p:1.10,h:395000,vr:0,vf:40,st:7.0},
+ {a:'SC',n:'South Carolina',b:[[0,0],[3560,.03],[17830,.06]],d:F,p:.51,h:270000,vr:1.6,vf:40,st:7.49},
+ {a:'SD',n:'South Dakota',b:[],p:1.07,h:254000,vr:0,vf:120,st:6.11},
+ {a:'TN',n:'Tennessee',b:[],p:.56,h:300000,vr:0,vf:80,st:9.56},
+ {a:'TX',n:'Texas',b:[],p:1.58,h:302000,vr:0,vf:75,st:8.2},
+ {a:'UT',n:'Utah',b:[[0,.045]],d:0,cr:945,crph:{s:18213,r:.013},p:.52,h:520000,vr:0,vf:160,st:7.25},
+ {a:'VT',n:'Vermont',b:[[0,.0335],[47900,.066],[116000,.076],[242000,.0875]],d:12700,p:1.61,h:320000,vr:0,vf:85,st:6.36},
+ {a:'VA',n:'Virginia',b:[[0,.02],[3000,.03],[5000,.05],[17000,.0575]],d:9430,p:.80,h:390000,vr:2.4,vf:45,st:5.77},
+ {a:'WA',n:'Washington',b:[],p:.80,h:568000,vr:.5,vf:90,st:9.43},
+ {a:'WV',n:'West Virginia',b:[[0,.0222],[10000,.0296],[25000,.0333],[40000,.0444],[60000,.0482]],d:2000,p:.53,h:167000,vr:0,vf:51,st:6.57},
+ {a:'WI',n:'Wisconsin',b:[[0,.035],[14680,.044],[29370,.053],[323290,.0765]],d:14260,ph:{s:19070,r:.12},p:1.38,h:271000,vr:0,vf:110,st:5.7},
+ {a:'WY',n:'Wyoming',b:[],p:.55,h:320000,vr:1.0,vf:30,st:5.44},
+];
+
+// tile-map grid position [row, col]
+const GRID = {AK:[0,0],ME:[0,11],WI:[1,6],VT:[1,10],NH:[1,11],
+ WA:[2,1],ID:[2,2],MT:[2,3],ND:[2,4],MN:[2,5],IL:[2,6],MI:[2,7],NY:[2,9],MA:[2,10],
+ OR:[3,1],NV:[3,2],WY:[3,3],SD:[3,4],IA:[3,5],IN:[3,6],OH:[3,7],PA:[3,8],NJ:[3,9],CT:[3,10],RI:[3,11],
+ CA:[4,1],UT:[4,2],CO:[4,3],NE:[4,4],MO:[4,5],KY:[4,6],WV:[4,7],VA:[4,8],MD:[4,9],DE:[4,10],
+ AZ:[5,2],NM:[5,3],KS:[5,4],AR:[5,5],TN:[5,6],NC:[5,7],SC:[5,8],DC:[5,9],
+ OK:[6,4],LA:[6,5],MS:[6,6],AL:[6,7],GA:[6,8],HI:[7,0],TX:[7,4],FL:[7,9]};
+
+const $ = id => document.getElementById(id);
+const money = v => '$' + Math.round(v).toLocaleString('en-US');
+const short = v => v >= 9950 ? '$' + (v/1000).toFixed(0) + 'k' : v >= 1000 ? '$' + (v/1000).toFixed(1) + 'k' : '$' + Math.round(v);
+const num = s => Number(String(s).replace(/[^0-9.]/g, '')) || 0;
+
+function incomeTax(s, inc, withLocal){
+  let ded = s.d || 0;
+  if (s.ph) ded = Math.max(0, ded - Math.max(0, inc - s.ph.s) * s.ph.r);
+  const ti = Math.max(0, inc - ded);
+  let tax = 0;
+  s.b.forEach(([t, r], i) => {
+    const next = s.b[i+1] ? s.b[i+1][0] : Infinity;
+    if (ti > t) tax += (Math.min(ti, next) - t) * r;
+  });
+  let cr = s.cr || 0;
+  if (s.crph) cr = Math.max(0, cr - Math.max(0, inc - s.crph.s) * s.crph.r);
+  tax = Math.max(0, tax - cr);
+  if (withLocal && s.loc) tax += ti * s.loc;
+  return tax;
+}
+
+// federal (single, 2025)
+const FED = [[0,.10],[11925,.12],[48475,.22],[103350,.24],[197300,.32],[250525,.35],[626350,.37]];
+const bracketTax = (b, ti) => b.reduce((t, [th, r], i) => {
+  const next = b[i+1] ? b[i+1][0] : Infinity;
+  return ti > th ? t + (Math.min(ti, next) - th) * r : t;
+}, 0);
+function fica(inc){
+  return Math.min(inc, 176100) * .062 + inc * .0145 + Math.max(0, inc - 200000) * .009;
+}
+function federal(inc, stateInc, sales, prop){
+  const cap = Math.max(10000, 40000 - Math.max(0, inc - 500000) * .3);
+  const salt = Math.min(cap, Math.max(stateInc, sales) + prop);
+  const itemize = salt > F;
+  const tax = bracketTax(FED, Math.max(0, inc - (itemize ? salt : F)));
+  return {tax, fica: fica(inc), itemize, salt};
+}
+function autoSpend(inc){
+  if (!inc) return 0;
+  const share = Math.min(.40, Math.max(.12, .35 - .05 * Math.log2(inc / 50000)));
+  return inc * share;
+}
+
+const store = {
+  get(k){ try { return localStorage.getItem('sta:' + k); } catch(e){ return null; } },
+  set(k, v){ try { localStorage.setItem('sta:' + k, v); } catch(e){} }
+};
+
+let sortKey = 'total', sortDir = 1;
+const COLS = [
+  {k:'rank', l:'#', cls:'l'},
+  {k:'n', l:'State', cls:'l'},
+  {k:'inc', l:'Income tax'},
+  {k:'prop', l:'Property tax'},
+  {k:'veh', l:'Vehicle'},
+  {k:'sales', l:'Sales tax'},
+  {k:'fed', l:'Federal', fed:true},
+  {k:'total', l:'Total / yr'},
+  {k:'pct', l:'% of income'},
+  {k:'takeHome', l:'Take-home'},
+  {k:'delta', l:'vs. your state'},
+  {k:'bar', l:'Breakdown', cls:'l', nosort:true},
+];
+
+function renderHomeExtra(){
+  const mode = $('homeMode').value;
+  const box = $('homeExtra');
+  if (mode === 'income') {
+    box.innerHTML = `<label for="mult">Home price = income ×</label><input id="mult" inputmode="decimal" value="${store.get('mult') || '3.5'}"><div class="hint">3–4× income is a common rule of thumb for an affordable home.</div>`;
+  } else if (mode === 'custom') {
+    box.innerHTML = `<label for="homeVal">Home value</label><input id="homeVal" inputmode="numeric" value="${store.get('homeVal') || '350,000'}">`;
+  } else if (mode === 'median') {
+    box.innerHTML = `<div class="hint">Uses each state's median home value, so expensive-housing states show more property tax.</div>`;
+  } else {
+    box.innerHTML = `<div class="hint">Renters still pay property tax indirectly through rent. This view just leaves it out.</div>`;
+  }
+  box.querySelectorAll('input').forEach(i => i.addEventListener('input', () => { store.set(i.id, i.value); update(); }));
+}
+
+function compute(){
+  const income = num($('income').value);
+  const withLocal = $('local').checked;
+  const mode = $('homeMode').value;
+  const mult = num($('mult')?.value) || 0;
+  const homeVal = num($('homeVal')?.value);
+  const cars = Number($('cars').value);
+  const carValue = num($('carValue').value);
+  const withFed = $('fed').checked;
+  const spend = $('spendMode').value === 'auto' ? autoSpend(income) : num($('spend').value);
+  const rows = STATES.map(s => {
+    const home = mode === 'income' ? income * mult : mode === 'median' ? s.h : mode === 'custom' ? homeVal : 0;
+    const inc = incomeTax(s, income, withLocal);
+    const prop = home * s.p / 100;
+    const veh = cars * (carValue * s.vr / 100 + s.vf);
+    const sales = spend * s.st / 100;
+    const f = federal(income, inc, sales, prop);
+    const fed = withFed ? f.tax + f.fica : 0;
+    const stateTotal = inc + prop + veh + sales;
+    const total = stateTotal + fed;
+    return {...s, home, inc, prop, veh, sales, f, fed, stateTotal, total, takeHome: income - total, pct: income ? total / income : 0};
+  });
+  [...rows].sort((x, y) => x.total - y.total).forEach((r, i) => r.rank = i + 1);
+  const mine = rows.find(r => r.a === $('mine').value);
+  rows.forEach(r => r.delta = mine ? r.total - mine.total : 0);
+  return {rows, income, mine, withFed, spend};
+}
+
+function seqColor(t){ // t in 0..1 -> one of 7 ramp steps
+  const i = Math.min(6, Math.max(0, Math.floor(t * 7)));
+  return {bg: `var(--seq${i})`, i};
+}
+
+function tipHTML(r, income){
+  return `<b>${r.n} · #${r.rank} of 51</b>
+    <div class="r"><span><i style="background:var(--s1)"></i>Income tax</span><span>${money(r.inc)}</span></div>
+    <div class="r"><span><i style="background:var(--s2)"></i>Property tax</span><span>${money(r.prop)}</span></div>
+    <div class="r"><span><i style="background:var(--s3)"></i>Vehicle tax</span><span>${money(r.veh)}</span></div>
+    <div class="r"><span><i style="background:var(--s4)"></i>Sales tax (${r.st}%)</span><span>${money(r.sales)}</span></div>
+    ${r.fed ? `<div class="r t"><span>State &amp; local</span><span>${money(r.stateTotal)}</span></div>
+    <div class="r"><span><i style="background:var(--fed)"></i>Federal income tax</span><span>${money(r.f.tax)}</span></div>
+    <div class="r"><span><i style="background:var(--fed)"></i>Social Security + Medicare</span><span>${money(r.f.fica)}</span></div>
+    <div class="r"><span>Federal deduction</span><span>${r.f.itemize ? 'SALT ' + money(r.f.salt) : 'standard'}</span></div>` : ''}
+    <div class="r t"><span>Total taxes</span><span>${money(r.total)}</span></div>
+    <div class="r"><span>Take-home</span><span>${money(r.takeHome)}</span></div>
+    <div class="r"><span>Share of income</span><span>${(r.pct*100).toFixed(1)}%</span></div>
+    ${r.home ? `<div class="r"><span>Home value used</span><span>${money(r.home)}</span></div>` : ''}`;
+}
+
+function update(){
+  const {rows, income, mine, withFed, spend} = compute();
+  $('mapTitle').textContent = withFed ? 'Total yearly taxes, federal + state + local' : 'Total yearly state & local taxes';
+  $('fedLegend').style.display = withFed ? '' : 'none';
+  $('spend').style.display = $('spendMode').value === 'auto' ? 'none' : '';
+  $('spendHint').textContent = $('spendMode').value === 'auto'
+    ? `About ${money(spend)}/yr of taxable purchases at this income.`
+    : 'Yearly spending on things that get sales tax (not rent, utilities or most services).';
+  store.set('income', $('income').value);
+  const byTotal = [...rows].sort((x, y) => x.total - y.total);
+  const lo = byTotal[0], hi = byTotal[byTotal.length - 1];
+  const min = lo.total, max = hi.total;
+
+  // stat tiles
+  const ties = byTotal.filter(r => Math.abs(r.total - min) < 1);
+  $('tiles').innerHTML = `
+    <div class="tile"><div class="k">Cheapest</div><div class="v">${money(min)}</div><div class="d">${ties.length > 2 ? ties.slice(0,3).map(r=>r.n).join(', ') + '…' : ties.map(r=>r.n).join(' & ')} · ${(lo.pct*100).toFixed(1)}% of income · take-home ${money(lo.takeHome)}</div></div>
+    <div class="tile"><div class="k">Most expensive</div><div class="v">${money(max)}</div><div class="d">${hi.n} · ${(hi.pct*100).toFixed(1)}% of income · take-home ${money(hi.takeHome)}</div></div>
+    <div class="tile"><div class="k">${mine ? mine.n : 'Gap, cheapest vs. priciest'}</div><div class="v">${mine ? money(mine.total) : money(max - min)}</div><div class="d">${mine ? `#${mine.rank} of 51 · ${mine.total - min < 1 ? 'already the cheapest' : money(mine.total - min) + '/yr more than ' + lo.n}` : 'per year, same income'}</div></div>`;
+
+  // map
+  $('map').innerHTML = '';
+  rows.forEach(r => {
+    const [row, col] = GRID[r.a];
+    const t = max > min ? (r.total - min) / (max - min) : 0;
+    const c = seqColor(t);
+    const dark = getComputedStyle(document.documentElement).colorScheme === 'dark';
+    const light = dark ? c.i >= 4 : c.i <= 2;
+    const el = document.createElement('div');
+    el.className = 'st' + (mine && mine.a === r.a ? ' mine' : '');
+    el.style.cssText = `grid-row:${row+1};grid-column:${col+1};background:${c.bg};color:${light ? '#0b0b0b' : '#ffffff'}`;
+    el.innerHTML = `${r.a}<small>${short(r.total)}</small>`;
+    el.setAttribute('aria-label', `${r.n}: ${money(r.total)} per year`);
+    el.addEventListener('mousemove', e => showTip(e, tipHTML(r, income)));
+    el.addEventListener('mouseleave', hideTip);
+    $('map').appendChild(el);
+  });
+  $('scale').innerHTML = `<span>${money(min)}</span><span class="bar">${[0,1,2,3,4,5,6].map(i=>`<i style="background:var(--seq${i})"></i>`).join('')}</span><span>${money(max)}</span>`;
+
+  // table
+  const cols = COLS.filter(c => (c.k !== 'delta' || mine) && (!c.fed || withFed));
+  if (!withFed && sortKey === 'fed') sortKey = 'total';
+  if (!mine && sortKey === 'delta') sortKey = 'total';
+  $('thead').innerHTML = cols.map(c => `<th class="${c.cls||''} ${sortKey===c.k?'sorted':''}" data-k="${c.k}" ${c.nosort?'':'tabindex="0"'}>${c.l}${sortKey===c.k ? (sortDir>0?' ↑':' ↓') : ''}</th>`).join('');
+  $('thead').querySelectorAll('th').forEach(th => {
+    const c = COLS.find(c => c.k === th.dataset.k);
+    if (c.nosort) return;
+    const go = () => { if (sortKey === c.k) sortDir *= -1; else { sortKey = c.k; sortDir = ['n','rank','total','pct','delta'].includes(c.k) ? 1 : -1; } update(); };
+    th.addEventListener('click', go);
+    th.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+  const key = sortKey === 'rank' ? 'total' : sortKey;
+  const sorted = [...rows].sort((x, y) => (typeof x[key] === 'string' ? x[key].localeCompare(y[key]) : x[key] - y[key]) * sortDir);
+  $('tbody').innerHTML = sorted.map(r => {
+    const w = v => max ? (v / max * 100) : 0;
+    const segs = [['inc','s1','Income tax'],['prop','s2','Property tax'],['veh','s3','Vehicle tax'],['sales','s4','Sales tax'],['fed','fed','Federal']]
+      .filter(([k]) => r[k] > 0.5)
+      .map(([k, s, l]) => `<i style="width:${w(r[k])}%;background:var(--${s})" data-l="${l}" data-v="${r[k]}"></i>`).join('');
+    const d = r.delta;
+    const deltaCell = mine ? `<td class="delta ${d > 1 ? 'up' : d < -1 ? 'down' : ''}">${r.a === mine.a ? '—' : (d > 0 ? '+' : d < 0 ? '−' : '') + money(Math.abs(d))}</td>` : '';
+    return `<tr class="${mine && r.a === mine.a ? 'mine' : ''}" data-a="${r.a}">
+      <td class="rank l">${r.rank}</td><td class="l">${r.n}</td>
+      <td>${money(r.inc)}</td><td>${money(r.prop)}</td><td>${money(r.veh)}</td><td>${money(r.sales)}</td>${withFed ? `<td>${money(r.fed)}</td>` : ''}
+      <td class="total">${money(r.total)}</td><td class="pct">${(r.pct*100).toFixed(1)}%</td><td>${money(r.takeHome)}</td>${deltaCell}
+      <td class="barcell"><div class="stack">${segs}</div></td></tr>`;
+  }).join('');
+  $('tbody').querySelectorAll('tr').forEach(tr => {
+    const r = rows.find(x => x.a === tr.dataset.a);
+    tr.querySelector('.stack').addEventListener('mousemove', e => showTip(e, tipHTML(r, income)));
+    tr.querySelector('.stack').addEventListener('mouseleave', hideTip);
+  });
+}
+
+const tip = $('tip');
+function showTip(e, html){
+  tip.innerHTML = html; tip.style.display = 'block';
+  const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  if (x + w > innerWidth - 8) x = e.clientX - w - pad;
+  if (y + h > innerHeight - 8) y = e.clientY - h - pad;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+function hideTip(){ tip.style.display = 'none'; }
+
+function formatMoneyInput(el){
+  el.addEventListener('input', () => {
+    const pos = el.value.length - el.selectionStart;
+    const n = num(el.value);
+    el.value = n ? n.toLocaleString('en-US') : '';
+    el.setSelectionRange(el.value.length - pos, el.value.length - pos);
+  });
+}
+
+// init
+STATES.slice().sort((a,b)=>a.n.localeCompare(b.n)).forEach(s => $('mine').insertAdjacentHTML('beforeend', `<option value="${s.a}">${s.n}</option>`));
+for (const k of ['income','carValue','spend']) { const v = store.get(k); if (v) $(k).value = v; formatMoneyInput($(k)); }
+for (const k of ['homeMode','cars','mine','spendMode']) { const v = store.get(k); if (v !== null) $(k).value = v; }
+for (const k of ['local','fed']) { const v = store.get(k); if (v !== null) $(k).checked = v === '1'; }
+renderHomeExtra();
+$('income').addEventListener('input', update);
+$('carValue').addEventListener('input', () => { store.set('carValue', $('carValue').value); update(); });
+$('homeMode').addEventListener('change', () => { store.set('homeMode', $('homeMode').value); renderHomeExtra(); update(); });
+for (const k of ['cars','mine','spendMode']) $(k).addEventListener('change', () => { store.set(k, $(k).value); update(); });
+$('spend').addEventListener('input', () => { store.set('spend', $('spend').value); update(); });
+for (const k of ['local','fed']) $(k).addEventListener('change', () => { store.set(k, $(k).checked ? '1' : '0'); update(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', update);
+update();
+</script>
+</body>
+</html>
