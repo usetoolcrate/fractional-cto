@@ -4,3 +4,6 @@ scripts/
 
 # Private Pancake exports (Brain, leads) — never publish
 pancake/
+
+# Internal ad plans (account IDs, budgets, stop rules) — never publish
+ads/google-search.md
