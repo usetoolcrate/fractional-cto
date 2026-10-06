@@ -1,3 +1,6 @@
 # Never upload local secrets or admin scripts
 .env*
 scripts/
+
+# Private Pancake exports (Brain, leads) — never publish
+pancake/
