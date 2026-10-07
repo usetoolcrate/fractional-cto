@@ -62,16 +62,16 @@ Landing page: `https://schottky.com/?utm_source=google&utm_medium=cpc&utm_campai
 4. Free review of your concrete5 site and a written quote. No sales call needed to start.
 
 ## Campaign 2 — "Search · agency white-label" — $8/day
-**Needs a landing page first:** schottky.com/agencies, not built yet. Don't launch until it's live. The homepage speaks to business owners, not agencies.
+Landing page live since 2026-10-07: schottky.com/agencies. Updated 10/7: lead with PHP/TypeScript/React, never WordPress (he hates it).
 
 Landing page: `https://schottky.com/agencies?utm_source=google&utm_medium=cpc&utm_campaign=agency`
 
 **Keywords:**
 - "white label web developer"
 - "white label web development"
-- "white label wordpress developer"
-- "white label shopify developer"
-- "white label webflow developer"
+- "white label developer"
+- "white label react developer"
+- "white label php developer"
 - "outsource web development for agencies"
 - "agency web developer"
 - "overflow web development"
@@ -79,11 +79,13 @@ Landing page: `https://schottky.com/agencies?utm_source=google&utm_medium=cpc&ut
 - "web development partner for agencies"
 - "contract web developer for agency"
 
+Display path: agencies / white-label
+
 **Headlines:**
 1. White-Label Web Developer
 2. Overflow Dev for Agencies
 3. Your Brand, My Code
-4. WordPress, Shopify, Webflow
+4. PHP, TypeScript & React
 5. Fixed Monthly, Not Hourly
 6. Remote, Dedicated Developer
 7. AI Integrations Included
@@ -95,7 +97,7 @@ Landing page: `https://schottky.com/agencies?utm_source=google&utm_medium=cpc&ut
 
 **Descriptions:**
 1. Your team stays client-facing; I build and maintain client sites behind the scenes.
-2. WordPress, Shopify and Webflow builds, plus AI features, on a fixed monthly arrangement.
+2. PHP, TypeScript and React builds, plus AI features, on a fixed monthly arrangement.
 3. More client work than developer hours? Add a senior developer without adding payroll.
 4. 15+ years full-stack. Most changes go live the same business day. Your name on the work.
 
