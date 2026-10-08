@@ -159,6 +159,7 @@ export async function loadAccount(customerId, { admin = false, detail = false } 
         description: detail ? inv.description || inv.lines?.data?.[0]?.description || null : undefined,
         url: inv.hosted_invoice_url,
         pdf: inv.invoice_pdf,
+        oneOff: detail ? !inv.parent?.subscription_details : undefined,
       })),
     ...(detail
       ? {

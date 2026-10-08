@@ -134,7 +134,7 @@
 
   .inv{border:1px solid var(--line);border-radius:8px;overflow:hidden}
   .inv-row{display:grid;grid-template-columns:8.5rem minmax(0,1fr) 6.5rem 8rem 6rem;gap:10px;align-items:center;padding:9px 14px;font-size:.88rem}
-  .inv-row+.inv-row{border-top:1px solid var(--line)}
+  .inv>.inv-row:not(:first-child){border-top:1px solid var(--line)}
   .inv-row .a{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
   .inv-row .l{text-align:right}
   .inv-row .d{color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -835,18 +835,43 @@
 
   function invoicesSection(a) {
     var box = el("div", { class: "inv" });
+    var msg = el("p", { class: "msg err", role: "alert" });
     if (!a.invoices.length) box.appendChild(el("p", { class: "empty", text: "No invoices yet." }));
     a.invoices.forEach(function (inv) {
       var st = inv.status === "paid" ? ["Paid", "ok"] : inv.status === "open" ? (inv.processing ? ["Processing", "muted"] : inv.attempted ? ["Failed", "bad"] : ["Due", "warn"]) : [inv.status, "muted"];
+      // Unpaid one-off requests can be cancelled (voided); the payee gets an email.
+      var canVoid = inv.oneOff && inv.status === "open" && !inv.processing && inv.remaining === inv.total;
+      var confirmBox = el("div", {});
+      var voidBtn = canVoid ? el("button", { class: "link bad", type: "button", text: "Void", style: "margin-left:10px", onclick: function () {
+        confirmBox.textContent = "";
+        var note = el("textarea", { class: "i", rows: "2", placeholder: "Optional note, e.g. Sorry, that one was a test.", "aria-label": "Note to payee" });
+        var vr = rid();
+        confirmBox.appendChild(el("div", { class: "confirm", style: "margin:0 14px 10px" }, [
+          el("p", { text: "Cancel " + (inv.number || "this invoice") + " for " + money(inv.total) + "? It can't be paid after this, and I'll email " + (a.client.email || "them") + " that it's cancelled." }),
+          note,
+          el("div", { class: "row" }, [
+            el("button", { class: "btn danger small", type: "button", text: "Void and email them", onclick: async function (e) {
+              e.currentTarget.disabled = true; msg.className = "msg err"; msg.textContent = "";
+              var r = await api("/api/admin/client", { id: a.id, action: "invoice-void", invoice: inv.id, note: note.value, requestId: vr });
+              if (!r.ok) { msg.textContent = r.data.error || "Failed."; confirmBox.textContent = ""; return; }
+              msg.className = r.data.emailError ? "msg err" : "msg ok";
+              msg.textContent = r.data.emailError || ("Voided " + (inv.number || "") + (r.data.emailed ? " and emailed " + r.data.emailed : "") + ".");
+              setTimeout(function () { openClient(a.id); loadList(); }, 1500);
+            } }),
+            el("button", { class: "btn ghost small", type: "button", text: "Keep it", onclick: function () { confirmBox.textContent = ""; } }),
+          ]),
+        ]));
+      } }) : null;
       box.appendChild(el("div", { class: "inv-row" }, [
         el("span", { class: "num", text: date(inv.created) }),
         el("span", { class: "d", text: (inv.number || "") + (inv.description ? " · " + inv.description : "") }),
         el("span", { class: "a", text: money(inv.total) }),
         el("span", {}, [el("span", { class: "pill " + st[1], text: st[0] })]),
-        el("span", { class: "l" }, [inv.url ? el("a", { href: inv.url, target: "_blank", rel: "noopener", text: "View" }) : null]),
+        el("span", { class: "l" }, [inv.url ? el("a", { href: inv.url, target: "_blank", rel: "noopener", text: "View" }) : null, voidBtn]),
       ]));
+      box.appendChild(confirmBox);
     });
-    return el("section", { class: "panel sec" }, [el("h2", { text: "Invoices" }), box]);
+    return el("section", { class: "panel sec" }, [el("h2", { text: "Invoices" }), box, msg]);
   }
 
   /* ---------- wiring ---------- */

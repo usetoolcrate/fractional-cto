@@ -175,6 +175,29 @@ ${feeLine ? `<p style="margin:0 0 20px;font-size:14px;color:#4a4f56">${esc(feeLi
   return { subject: `Payment request: ${description} (${money(total)})`, text, html };
 }
 
+// Tells the payee an unpaid invoice was cancelled, so an old Pay link isn't a mystery.
+export function voidEmail({ name, number, description, total, note }) {
+  const first = String(name || "").trim().split(/\s+/)[0] || "there";
+  const what = `invoice ${number}${description ? ` for ${description}` : ""} (${money(total)})`;
+  const message = typeof note === "string" && note.trim() ? note.trim() : "";
+  const text = [
+    `Hi ${first},`,
+    "",
+    `I've cancelled ${what}. There's nothing to pay, and the Pay link in the earlier email no longer works.`,
+    ...(message ? ["", message] : []),
+    "",
+    "If you already started a payment, just reply and I'll sort it out.",
+  ].join("\n");
+  const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#faf8f4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;color:#1c1e21;font-size:16px;line-height:1.6">
+<div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e2dcd0;border-radius:10px;padding:28px">
+<p style="margin:0 0 16px">Hi ${esc(first)},</p>
+<p style="margin:0 0 16px">I've cancelled ${esc(what)}. <strong>There's nothing to pay</strong>, and the Pay link in the earlier email no longer works.</p>
+${message ? paragraphs(message) : ""}
+<p style="margin:0;font-size:14px;color:#4a4f56">If you already started a payment, just reply and I'll sort it out.</p>
+</div></body></html>`;
+  return { subject: `Cancelled: invoice ${number} (${money(total)})`, text, html };
+}
+
 // One-time sign-in link for /payments (no code needed). Not copied to me.
 export function signInEmail({ name, url }) {
   const first = String(name || "").trim().split(/\s+/)[0] || "there";

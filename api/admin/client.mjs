@@ -3,13 +3,14 @@
 // (send that invite, body editable first), plan (create a phased
 // plan: starts on a fixed date, or when the client makes the first payment),
 // plan-cancel (only before any charge), addon-add / addon-remove, request
-// (one-off invoice, optionally with a fee line, emailed with a breakdown).
+// (one-off invoice, optionally with a fee line, emailed with a breakdown),
+// invoice-void (cancel an unpaid one-off invoice and email the payee).
 import { loadAccount } from "../_lib/account.mjs";
 import { guard, readJson } from "../_lib/admin.mjs";
 import { centralMidnight, monthlyPrice, productNames, todayCentral } from "../_lib/billing.mjs";
 import { generateCode, hashCode } from "../_lib/codes.mjs";
 import { decodePending, encodePending, newPendingId, reconcilePending } from "../_lib/plans.mjs";
-import { inviteEmail, requestEmail, sendEmail } from "../_lib/email.mjs";
+import { inviteEmail, requestEmail, sendEmail, voidEmail } from "../_lib/email.mjs";
 import { json } from "../_lib/session.mjs";
 import { adminStripe, dashboardUrl, isTestMode } from "../_lib/stripe.mjs";
 
@@ -63,6 +64,8 @@ export async function POST(request) {
         return await changeAddon(body, "remove");
       case "request":
         return await paymentRequest(body, idem);
+      case "invoice-void":
+        return await voidInvoice(body, idem);
       default:
         return json({ error: "Unknown action" }, 400);
     }
@@ -333,4 +336,36 @@ async function paymentRequest({ id, amount, description, daysUntilDue, fee, feeL
   }
   const sent = await adminStripe("POST", `invoices/${invoice.id}/send`, {});
   return json({ ok: true, number: sent.number, url: sent.hosted_invoice_url, emailed: customer.email || null, viaStripe: true }, 201);
+}
+
+// Sent invoices can't be deleted in Stripe, only voided: it can no longer be
+// paid and drops off both invoice lists. Only unpaid one-off requests; plan
+// invoices are left to the Stripe dashboard because voiding them affects the
+// subscription. The payee is always told it's cancelled.
+async function voidInvoice({ id, invoice, note }, idem) {
+  if (!/^in_[A-Za-z0-9]+$/.test(invoice || "")) return json({ error: "Unknown invoice" }, 400);
+  const inv = await adminStripe("GET", `invoices/${invoice}`);
+  if (inv.customer !== id) return json({ error: "That invoice belongs to another client." }, 400);
+  if (inv.parent?.subscription_details) return json({ error: "That's a plan invoice. Void it in the Stripe dashboard so you can decide what happens to the plan." }, 409);
+  if (inv.status === "draft") {
+    await adminStripe("DELETE", `invoices/${invoice}`);
+    return json({ ok: true, emailed: null });
+  }
+  if (inv.status === "void") return json({ error: "That invoice is already cancelled." }, 409);
+  if (inv.status !== "open" || inv.amount_paid > 0) return json({ error: "Only unpaid invoices can be cancelled. Refund a paid one in the Stripe dashboard." }, 409);
+  await adminStripe("POST", `invoices/${invoice}/void`, {});
+
+  const customer = await adminStripe("GET", `customers/${id}`);
+  if (!customer.email) return json({ ok: true, emailed: null });
+  try {
+    const mail = voidEmail({
+      name: customer.name, number: inv.number, total: inv.total,
+      description: inv.description || inv.lines?.data?.[0]?.description || "", note,
+    });
+    const sent = await sendEmail({ to: customer.email, ...mail, idempotencyKey: idem("void") });
+    return json({ ok: true, emailed: customer.email, copiedTo: sent?.copiedTo ?? null });
+  } catch (err) {
+    console.error("void email failed", err.message);
+    return json({ ok: true, emailed: null, emailError: `Voided, but the email didn't send (${err.message}). Let them know yourself.` });
+  }
 }
