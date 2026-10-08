@@ -51,6 +51,9 @@
   label.f{display:flex;flex-direction:column;gap:4px;font-size:.78rem;font-weight:600;color:var(--ink-soft);min-width:0}
   input.i{border:1px solid var(--line);border-radius:6px;background:var(--card);padding:8px 10px;font-size:.95rem;color:var(--ink);width:100%;min-width:0}
   input.i:focus{border-color:var(--accent)}
+  select.i{border:1px solid var(--line);border-radius:6px;background:var(--card);padding:8px 10px;font:inherit;font-size:.95rem;color:var(--ink);width:100%;min-width:0}
+  .breakdown{margin:10px 0 0;font-size:.9rem;color:var(--ink)}
+  .breakdown:empty{display:none}
   textarea.i{border:1px solid var(--line);border-radius:6px;background:var(--card);padding:10px 12px;font:inherit;font-size:.95rem;line-height:1.55;color:var(--ink);width:100%;min-width:0;resize:vertical}
   textarea.i:focus{border-color:var(--accent);outline:none}
   .draft{margin-top:14px;display:grid;gap:10px}
@@ -734,35 +737,97 @@
     ]);
   }
 
-  /* One-off payment request */
+  /* One-off payment request. Optional fee: its own line on the invoice and in
+     the email. "Cover card fees" grosses up so a card payment still nets the
+     amount (card % + 30¢ + Invoicing %); paid by bank, I keep a little more. */
+  function coverCardFee(amount) {
+    var pct = FEES.cardPct + FEES.invoicingPct;
+    return Math.ceil((amount + FEES.cardFixed) / (1 - pct)) - amount;
+  }
   function requestSection(a) {
     var amt = el("input", { class: "i num", inputmode: "decimal", placeholder: "500" });
     var desc = el("input", { class: "i", placeholder: "Logo refresh", autocomplete: "off" });
     var due = el("input", { class: "i num", type: "number", min: "0", max: "90", value: "14" });
+    var feeMode = el("select", { class: "i" }, [
+      el("option", { value: "none", text: "No fee" }),
+      el("option", { value: "cover", text: "Cover my card fees (≈" + ((FEES.cardPct + FEES.invoicingPct) * 100).toFixed(1) + "% + 30¢)" }),
+      el("option", { value: "pct", text: "Percent of amount" }),
+      el("option", { value: "flat", text: "Flat amount" }),
+    ]);
+    var feeVal = el("input", { class: "i num", inputmode: "decimal", placeholder: "3" });
+    var feeValLabel = el("label", { class: "f", style: "flex:0 1 110px;display:none" }, [el("span", { text: "Fee (%)" }), feeVal]);
+    var feeLabel = el("input", { class: "i", value: "Processing fee", maxlength: "60", autocomplete: "off" });
+    var feeLabelWrap = el("label", { class: "f", style: "flex:1 1 180px;display:none" }, ["Fee shows as", feeLabel]);
+    var note = el("textarea", { class: "i", rows: "2", placeholder: "Optional note in the email, e.g. Thanks! Rent for November.", "aria-label": "Note to payee" });
     var msg = el("p", { class: "msg err", role: "alert" });
     var btn = el("button", { class: "btn", type: "submit", text: "Send payment request" });
+    var breakdown = el("p", { class: "breakdown" });
     var reqNet = el("p", { class: "net" });
-    amt.addEventListener("input", function () {
-      var c = toCents(amt.value);
-      reqNet.textContent = c >= 100 ? keepText(c, "invoice", null) + "." : "";
-    });
+
+    function feeCents() {
+      var c = toCents(amt.value), m = feeMode.value, v = Number(String(feeVal.value).replace(/[$,%\s]/g, ""));
+      if (!(c >= 100) || m === "none") return 0;
+      if (m === "cover") return coverCardFee(c);
+      if (!Number.isFinite(v) || v <= 0) return 0;
+      return m === "pct" ? Math.round(c * v / 100) : Math.round(v * 100);
+    }
+    function update() {
+      var m = feeMode.value;
+      feeValLabel.style.display = m === "pct" || m === "flat" ? "" : "none";
+      feeValLabel.firstChild.textContent = m === "pct" ? "Fee (%)" : "Fee ($)";
+      feeLabelWrap.style.display = m === "none" ? "none" : "";
+      var c = toCents(amt.value), f = feeCents();
+      if (!(c >= 100)) { breakdown.textContent = ""; reqNet.textContent = ""; return; }
+      breakdown.textContent = f
+        ? "They see: " + (desc.value.trim() || "Amount") + " " + money(c) + " + " + (feeLabel.value.trim() || "Processing fee") + " " + money(f) + " = " + money(c + f) + " total"
+        : "";
+      reqNet.textContent = keepText(c + f, "invoice", null) + ".";
+    }
+    [amt, desc, feeVal, feeLabel].forEach(function (n) { n.addEventListener("input", update); });
+    feeMode.addEventListener("change", update);
+    // Start from this client's last fee choice (saved when a request is sent).
+    var saved = null;
+    try { saved = JSON.parse((a.metadata && a.metadata.request_fee) || "null"); } catch (err) { saved = null; }
+    function applySaved() {
+      feeMode.value = saved && /^(cover|pct|flat)$/.test(saved.m) ? saved.m : "none";
+      feeVal.value = saved && saved.v ? saved.v : "";
+      feeLabel.value = saved && saved.l ? saved.l : "Processing fee";
+      update();
+    }
+    applySaved();
+
     var rq = rid();
     return el("section", { class: "panel sec" }, [
       el("h2", { text: "One-off payment request" }),
-      el("p", { class: "hint", text: "Stripe emails the client an invoice with a Pay button (card or bank). It also shows on their /payments page." }),
-      el("form", { class: "row", novalidate: true, onsubmit: async function (e) {
+      el("p", { class: "hint", text: "I email them the request with a Pay button (bank or card), listing any fee on its own line. It also shows on their /payments page. The fee choice is remembered per client." }),
+      el("form", { novalidate: true, onsubmit: async function (e) {
         e.preventDefault(); msg.textContent = ""; msg.className = "msg err"; btn.disabled = true;
-        var r = await api("/api/admin/client", { id: a.id, action: "request", amount: amt.value.replace(/[$,\s]/g, ""), description: desc.value, daysUntilDue: Number(due.value), requestId: rq });
+        var f = feeCents();
+        var r = await api("/api/admin/client", {
+          id: a.id, action: "request", amount: amt.value.replace(/[$,\s]/g, ""), description: desc.value,
+          daysUntilDue: Number(due.value), fee: (f / 100).toFixed(2), feeLabel: feeLabel.value, feeMode: feeMode.value, feeValue: feeVal.value,
+          note: note.value, requestId: rq,
+        });
         btn.disabled = false;
         if (!r.ok) { msg.textContent = r.data.error || "Failed."; return; }
-        rq = rid(); amt.value = ""; desc.value = ""; reqNet.textContent = "";
-        msg.className = "msg ok"; msg.textContent = "Sent invoice " + r.data.number + ".";
+        rq = rid(); amt.value = ""; desc.value = ""; note.value = ""; update();
+        msg.className = "msg ok";
+        msg.textContent = "Sent invoice " + r.data.number + (r.data.emailed ? " to " + r.data.emailed : "") +
+          (r.data.viaStripe ? " (Stripe's email; mine failed)" : r.data.copiedTo ? ". Copy sent to " + r.data.copiedTo : "") + ".";
         setTimeout(function () { openClient(a.id); loadList(); }, 1200);
       } }, [
-        el("label", { class: "f", style: "flex:2 1 220px" }, ["For", desc]),
-        el("label", { class: "f", style: "flex:1 1 90px" }, ["Amount ($)", amt]),
-        el("label", { class: "f", style: "flex:0 1 110px" }, ["Due in (days)", due]),
-        btn,
+        el("div", { class: "row" }, [
+          el("label", { class: "f", style: "flex:2 1 220px" }, ["For", desc]),
+          el("label", { class: "f", style: "flex:1 1 90px" }, ["Amount ($)", amt]),
+          el("label", { class: "f", style: "flex:0 1 110px" }, ["Due in (days)", due]),
+        ]),
+        el("div", { class: "row", style: "margin-top:10px" }, [
+          el("label", { class: "f", style: "flex:1 1 200px" }, ["Add a fee", feeMode]),
+          feeValLabel, feeLabelWrap,
+        ]),
+        el("label", { class: "f", style: "margin-top:10px" }, ["Note (optional)", note]),
+        breakdown,
+        el("div", { style: "margin-top:12px" }, [btn]),
       ]),
       reqNet, msg, feeNote("invoice"),
     ]);

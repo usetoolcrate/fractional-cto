@@ -3,13 +3,13 @@
 // (send that invite, body editable first), plan (create a phased
 // plan: starts on a fixed date, or when the client makes the first payment),
 // plan-cancel (only before any charge), addon-add / addon-remove, request
-// (one-off invoice Stripe emails).
+// (one-off invoice, optionally with a fee line, emailed with a breakdown).
 import { loadAccount } from "../_lib/account.mjs";
 import { guard, readJson } from "../_lib/admin.mjs";
 import { centralMidnight, monthlyPrice, productNames, todayCentral } from "../_lib/billing.mjs";
 import { generateCode, hashCode } from "../_lib/codes.mjs";
 import { decodePending, encodePending, newPendingId, reconcilePending } from "../_lib/plans.mjs";
-import { inviteEmail, sendEmail } from "../_lib/email.mjs";
+import { inviteEmail, requestEmail, sendEmail } from "../_lib/email.mjs";
 import { json } from "../_lib/session.mjs";
 import { adminStripe, dashboardUrl, isTestMode } from "../_lib/stripe.mjs";
 
@@ -271,14 +271,22 @@ async function cancelPlan({ id }) {
   return json({ error: "This plan has already started. Cancel it in the Stripe dashboard so you can choose what happens to the current month." }, 409);
 }
 
-async function paymentRequest({ id, amount, description, daysUntilDue }, idem) {
+// One-off invoice. An optional fee (e.g. a card processing fee) goes on as its
+// own line so the payee sees it separately on the email, invoice page and PDF.
+// I email the request myself so the breakdown is spelled out; if that email
+// fails, Stripe's own invoice email goes out instead.
+async function paymentRequest({ id, amount, description, daysUntilDue, fee, feeLabel, feeMode, feeValue, note }, idem) {
   const a = cents(amount);
+  const f = fee === undefined || fee === null || fee === "" ? 0 : cents(fee);
   const desc = String(description ?? "").trim().slice(0, 200);
+  const label = String(feeLabel ?? "").trim().slice(0, 60) || "Processing fee";
   const days = Number(daysUntilDue ?? 14);
   if (!(a >= 100 && a <= 5_000_000)) return json({ error: "Amount must be between $1 and $50,000." }, 400);
   if (!desc) return json({ error: "Describe what the payment is for (it shows on the invoice)." }, 400);
+  if (!(Number.isInteger(f) && f >= 0 && f <= Math.min(a, 500_000))) return json({ error: "The fee must be between $0 and the amount (max $5,000)." }, 400);
   if (!(Number.isInteger(days) && days >= 0 && days <= 90)) return json({ error: "Due in 0 to 90 days." }, 400);
 
+  const customer = await adminStripe("GET", `customers/${id}`);
   const invoice = await adminStripe(
     "POST",
     "invoices",
@@ -287,19 +295,42 @@ async function paymentRequest({ id, amount, description, daysUntilDue }, idem) {
       collection_method: "send_invoice",
       days_until_due: days,
       description: desc,
+      auto_advance: false, // finalized and emailed below, never automatically
       pending_invoice_items_behavior: "exclude",
       payment_settings: { payment_method_types: ["card", "us_bank_account"] },
-      metadata: { portal: "schottky" },
+      metadata: { portal: "schottky", ...(f ? { fee_cents: String(f), fee_label: label } : {}) },
     },
     { idempotencyKey: idem("request") },
   );
+  // One call, in order, so the amount always lists above the fee.
   await adminStripe(
     "POST",
-    "invoiceitems",
-    { customer: id, invoice: invoice.id, amount: a, currency: "usd", description: desc },
-    { idempotencyKey: idem("request-item") },
+    `invoices/${invoice.id}/add_lines`,
+    { lines: [{ amount: a, description: desc }, ...(f ? [{ amount: f, description: label }] : [])] },
+    { idempotencyKey: idem("request-lines") },
   );
-  await adminStripe("POST", `invoices/${invoice.id}/finalize`, {});
+  const final = await adminStripe("POST", `invoices/${invoice.id}/finalize`, { auto_advance: false });
+
+  // Remember this client's fee choice so their next request starts with it
+  // (e.g. a tenant always pays the fee, a web client never does).
+  const mode = ["cover", "pct", "flat"].includes(feeMode) && f ? feeMode : "none";
+  const remembered = mode === "none" ? "" : JSON.stringify({ m: mode, v: String(feeValue ?? "").slice(0, 12), l: label });
+  if ((customer.metadata?.request_fee || "") !== remembered) {
+    await adminStripe("POST", `customers/${id}`, { metadata: { request_fee: remembered } });
+  }
+
+  if (customer.email) {
+    try {
+      const mail = requestEmail({
+        name: customer.name, description: desc, amount: a, fee: f, feeLabel: label,
+        dueDate: final.due_date, url: final.hosted_invoice_url, number: final.number, note,
+      });
+      const sent = await sendEmail({ to: customer.email, ...mail, idempotencyKey: idem("request-email") });
+      return json({ ok: true, number: final.number, url: final.hosted_invoice_url, emailed: customer.email, copiedTo: sent?.copiedTo ?? null }, 201);
+    } catch (err) {
+      console.error("request email failed, falling back to Stripe", err.message);
+    }
+  }
   const sent = await adminStripe("POST", `invoices/${invoice.id}/send`, {});
-  return json({ ok: true, number: sent.number, url: sent.hosted_invoice_url }, 201);
+  return json({ ok: true, number: sent.number, url: sent.hosted_invoice_url, emailed: customer.email || null, viaStripe: true }, 201);
 }

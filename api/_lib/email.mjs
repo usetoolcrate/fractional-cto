@@ -124,6 +124,57 @@ ${paragraphs(message)}
   return { subject: "Your billing page and client code", text, html, body: message, suggested };
 }
 
+// One-off payment request. The amount, any fee and the total are laid out as a
+// small table so a fee is never buried; `note` is an optional message from me.
+export function requestEmail({ name, description, amount, fee = 0, feeLabel, dueDate, url, number, note }) {
+  const first = String(name || "").trim().split(/\s+/)[0] || "there";
+  const total = amount + fee;
+  const due = dueDate ? day(dueDate) : null;
+  const message = typeof note === "string" && note.trim() ? note.trim() : "";
+  const feeLine = fee
+    ? `The ${feeLabel.toLowerCase()} of ${money(fee)} covers the cost of taking the payment online and is included in the total.`
+    : "";
+
+  const text = [
+    `Hi ${first},`,
+    "",
+    `Here's a payment request for ${description}.`,
+    ...(message ? ["", message] : []),
+    "",
+    `${description}: ${money(amount)}`,
+    ...(fee ? [`${feeLabel}: ${money(fee)}`] : []),
+    `Total due: ${money(total)}${due ? ` by ${due}` : ""}`,
+    ...(feeLine ? ["", feeLine] : []),
+    "",
+    `Pay by bank account or card here:`,
+    url,
+    "",
+    `Invoice ${number}. Questions? Just reply to this email.`,
+  ].join("\n");
+
+  const row = (label, value, strong) =>
+    `<tr><td style="padding:10px 0;border-top:1px solid #e2dcd0${strong ? ";font-weight:700" : ""}">${esc(label)}</td><td style="padding:10px 0;border-top:1px solid #e2dcd0;text-align:right;white-space:nowrap${strong ? ";font-weight:700" : ""}">${money(value)}</td></tr>`;
+
+  const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#faf8f4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;color:#1c1e21;font-size:16px;line-height:1.6">
+<div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e2dcd0;border-radius:10px;padding:28px">
+<p style="margin:0 0 16px">Hi ${esc(first)},</p>
+<p style="margin:0 0 16px">Here's a payment request for ${esc(description)}.</p>
+${message ? paragraphs(message) : ""}
+<table role="presentation" style="width:100%;border-collapse:collapse;margin:4px 0 8px;font-size:16px">
+${row(description, amount)}
+${fee ? row(feeLabel, fee) : ""}
+${row("Total due", total, true)}
+</table>
+${due ? `<p style="margin:0 0 16px;font-size:14px;color:#4a4f56">Due by ${esc(due)}</p>` : ""}
+${feeLine ? `<p style="margin:0 0 20px;font-size:14px;color:#4a4f56">${esc(feeLine)}</p>` : ""}
+<p style="margin:0 0 20px"><a href="${esc(url)}" style="display:inline-block;background:#1f5c48;color:#fff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:6px">Pay ${money(total)}</a></p>
+<p style="margin:0 0 16px;font-size:14px;color:#4a4f56">You can pay by bank account or card.</p>
+<p style="margin:0;font-size:14px;color:#4a4f56">Invoice ${esc(number)}. Questions? Just reply to this email.</p>
+</div></body></html>`;
+
+  return { subject: `Payment request: ${description} (${money(total)})`, text, html };
+}
+
 // One-time sign-in link for /payments (no code needed). Not copied to me.
 export function signInEmail({ name, url }) {
   const first = String(name || "").trim().split(/\s+/)[0] || "there";
