@@ -7,3 +7,6 @@ pancake/
 
 # Internal ad plans (account IDs, budgets, stop rules) — never publish
 ads/google-search.md
+
+# RFP proposal drafts, pricing and insurance details — never publish
+proposals/
