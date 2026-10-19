@@ -105,3 +105,30 @@ Display path: agencies / white-label
 - Total about $18/day, roughly $540/month.
 - **Stop rule** (same idea as Meta): pause any campaign that spends **$300 with zero free-review requests or agency inquiries**, then rework the keywords or page before restarting.
 - Check weekly on Fridays: search-terms report → add negatives, and look at spend, clicks and leads.
+
+## Update 2026-10-09: CMS migration ad group added (inside the concrete5 campaign)
+No impressions on Oct 7–8, and concrete5 alone is too narrow, so on 10/9 a second ad group, **"CMS migration"**, was added to "Search · concrete5 migration". The budget stays at $10/day, with Max clicks and the $6 cap. Google reviewed the ad and found no policy issues.
+- **Landing page:** https://schottky.com/#eol ("Whatever your site runs on"). Display path: schottky.com/cms/migration. No UTMs, because gclid auto-tagging covers attribution.
+- **Keywords (phrase match):** cms migration, cms migration services, website migration service(s), joomla migration, migrate from joomla, joomla 3 end of life, drupal 7 end of life, drupal 7 migration, migrate from drupal, legacy website migration, website platform migration, website modernization, rebuild my website, replace old website.
+- **Headlines:**
+  1. Website Migration Done Right
+  2. CMS Migration, Fixed Price
+  3. Off Joomla or Drupal 7?
+  4. Rebuild Your Old Website
+  5. Keep Your Rankings & Content
+  6. Fixed Price, Real Deadline
+  7. Free Site Review & Quote
+  8. 15+ Years Full-Stack Dev
+  9. One Accountable Developer
+  10. Code You Own, Documented
+  11. Remote, Dedicated Developer
+  12. PHP, TypeScript & React
+  13. Joomla & Drupal Migration
+  14. Move Off Your Old CMS
+  15. Your Old Site, Rebuilt
+- **Descriptions:**
+  1. Stuck on an old CMS? I move your site to a modern stack with content and rankings intact.
+  2. Scope, price and deadline agreed in writing before any work starts.
+  3. Joomla, Drupal, concrete5 or a custom build nobody wants to touch. Free review first.
+  4. Remote, dedicated developer. Message me like a coworker; most changes live same day.
+- **Next:** on Mon 10/12, check impressions and the search-terms report. "rebuild my website" and "replace old website" may attract DIY/cheap searches, so add negatives as needed. Consider renaming the campaign to "Search · CMS migration".
