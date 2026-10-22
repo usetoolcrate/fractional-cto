@@ -588,6 +588,62 @@
   function fmtMonth(d) { return d.toLocaleDateString("en-US", { timeZone: "UTC", month: "short", year: "numeric" }); }
   function toCents(v) { var n = Number(String(v).replace(/[$,\s]/g, "")); return Number.isFinite(n) ? Math.round(n * 100) : NaN; }
 
+  /* Optional fee on top of what the client pays, used by plans and one-off
+     requests. It's billed as its own line (a separate item on every phase of
+     a plan, a second line on a request) so it's never buried. "Cover card
+     fees" grosses up so a card payment still nets the amount (card % + 30¢ +
+     Stripe's Billing or Invoicing %); paid by bank, I keep a little more. The
+     choice is remembered per client (customer metadata request_fee). */
+  function coverCardFee(amount, kind) {
+    var pct = FEES.cardPct + (kind === "invoice" ? FEES.invoicingPct : FEES.billingPct);
+    return Math.ceil((amount + FEES.cardFixed) / (1 - pct)) - amount;
+  }
+  function feeControls(a, kind, onChange) {
+    var mode = el("select", { class: "i" }, [
+      el("option", { value: "none", text: "No fee" }),
+      el("option", { value: "cover", text: "Cover my card fees (≈" + ((FEES.cardPct + (kind === "invoice" ? FEES.invoicingPct : FEES.billingPct)) * 100).toFixed(1) + "% + 30¢)" }),
+      el("option", { value: "pct", text: "Percent of amount" }),
+      el("option", { value: "flat", text: "Flat amount" }),
+    ]);
+    var val = el("input", { class: "i num", inputmode: "decimal", placeholder: "3" });
+    var valLabel = el("label", { class: "f", style: "flex:0 1 110px;display:none" }, [el("span", { text: "Fee (%)" }), val]);
+    var label = el("input", { class: "i", value: "Processing fee", maxlength: "60", autocomplete: "off" });
+    var labelWrap = el("label", { class: "f", style: "flex:1 1 180px;display:none" }, ["Fee shows as", label]);
+    var row = [el("label", { class: "f", style: "flex:1 1 200px" }, ["Add a fee", mode]), valLabel, labelWrap];
+
+    function feeFor(c) {
+      var m = mode.value, v = Number(String(val.value).replace(/[$,%\s]/g, ""));
+      if (!(c >= 100) || m === "none") return 0;
+      if (m === "cover") return coverCardFee(c, kind);
+      if (!Number.isFinite(v) || v <= 0) return 0;
+      return m === "pct" ? Math.round(c * v / 100) : Math.round(v * 100);
+    }
+    function sync() {
+      var m = mode.value;
+      valLabel.style.display = m === "pct" || m === "flat" ? "" : "none";
+      valLabel.firstChild.textContent = m === "pct" ? "Fee (%)" : "Fee ($)";
+      labelWrap.style.display = m === "none" ? "none" : "";
+    }
+    [val, label].forEach(function (n) { n.addEventListener("input", onChange); });
+    mode.addEventListener("change", function () { sync(); onChange(); });
+
+    // Start from this client's last fee choice (saved with a plan or request).
+    var saved = null;
+    try { saved = JSON.parse((a.metadata && a.metadata.request_fee) || "null"); } catch (err) { saved = null; }
+    mode.value = saved && /^(cover|pct|flat)$/.test(saved.m) ? saved.m : "none";
+    val.value = saved && saved.v ? saved.v : "";
+    label.value = saved && saved.l ? saved.l : "Processing fee";
+    sync();
+
+    return {
+      row: row,
+      feeFor: feeFor,
+      labelText: function () { return label.value.trim() || "Processing fee"; },
+      payload: function () { return { feeLabel: label.value, feeMode: mode.value, feeValue: val.value }; },
+      reset: function () { onChange(); },
+    };
+  }
+
   function designerSection(a) {
     var rows = [
       { name: "Website build & care", amount: "250", months: "18", ongoing: false },
@@ -612,6 +668,8 @@
     var preview = el("div", { class: "preview" });
     var msg = el("p", { class: "msg err", role: "alert" });
     var confirmBox = el("div", {});
+    // Fee on every phase, computed per phase (a percent fee follows the amount).
+    var fee = feeControls(a, "subscription", function () { update(); });
 
     function draw() {
       list.textContent = "";
@@ -637,27 +695,30 @@
     function summary() {
       var s = start.value;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return { error: "Pick a start date." };
-      var lines = [], phases = [], offset = 0, total = 0, firstAmount = null;
+      // Per phase: amount is what the work costs, fee the optional line on top,
+      // gross what the client actually pays each month.
+      var lines = [], phases = [], offset = 0, total = 0, firstAmount = null, anyFee = false;
       for (var i = 0; i < rows.length; i++) {
-        var r = rows[i], c = toCents(r.amount);
+        var r = rows[i], c = toCents(r.amount), f = fee.feeFor(c), g = c + f;
         if (!r.name.trim()) return { error: "Phase " + (i + 1) + " needs a name." };
         if (!(c >= 100)) return { error: "Phase " + (i + 1) + " needs an amount." };
-        if (firstAmount === null) firstAmount = c;
+        if (f) anyFee = true;
+        if (firstAmount === null) firstAmount = g;
         if (r.ongoing) {
-          var ol = mode === "pay" ? money(c) + "/mo ongoing" + (i ? " after that" : "") : money(c) + "/mo ongoing from " + fmtMonth(addMonths(s, offset));
+          var ol = mode === "pay" ? money(g) + "/mo ongoing" + (i ? " after that" : "") : money(g) + "/mo ongoing from " + fmtMonth(addMonths(s, offset));
           lines.push((i ? "then " : "") + ol);
-          phases.push({ label: ol, amount: c, months: null });
+          phases.push({ label: ol, name: r.name.trim(), amount: c, fee: f, gross: g, months: null });
           break;
         }
         var m = Number(r.months);
         if (!(Number.isInteger(m) && m >= 1 && m <= 60)) return { error: "Phase " + (i + 1) + " needs 1 to 60 months." };
         var range = mode === "pay" ? "" : " (" + fmtMonth(addMonths(s, offset)) + " – " + fmtMonth(addMonths(s, offset + m - 1)) + ")";
-        lines.push((i ? "then " : "") + money(c) + "/mo × " + m + range + " = " + money(c * m));
-        phases.push({ label: money(c) + "/mo × " + m + range, amount: c, months: m });
-        total += c * m; offset += m;
+        lines.push((i ? "then " : "") + money(g) + "/mo × " + m + range + " = " + money(g * m));
+        phases.push({ label: money(g) + "/mo × " + m + range, name: r.name.trim(), amount: c, fee: f, gross: g, months: m });
+        total += g * m; offset += m;
         if (i === rows.length - 1) lines.push("then the plan ends" + (mode === "pay" ? "" : " (" + fmtMonth(addMonths(s, offset)) + ")"));
       }
-      return { lines: lines, phases: phases, total: total, first: firstAmount };
+      return { lines: lines, phases: phases, total: total, first: firstAmount, anyFee: anyFee };
     }
 
     function update() {
@@ -669,6 +730,12 @@
         ? "First payment of " + money(sm.first) + " due by " + dayLabel + "; the plan starts the day they pay. "
         : "Starts " + dayLabel + ". " }));
       preview.appendChild(document.createTextNode(sm.lines.join(", ") + "." + (sm.total ? " Fixed-term total " + money(sm.total) + "." : "")));
+      if (sm.anyFee) {
+        // The fee is its own line, so spell out what each invoice will show.
+        preview.appendChild(el("p", { class: "breakdown", style: "margin:8px 0 0", text: "They see on each invoice: " + sm.phases.map(function (ph) {
+          return ph.name + " " + money(ph.amount) + (ph.fee ? " + " + fee.labelText() + " " + money(ph.fee) + " = " + money(ph.gross) : "");
+        }).join("; then ") + "." }));
+      }
 
       // Admin-only: what I keep after Stripe fees, per phase and for the fixed term.
       var cell = function (t, cls) { return el("td", { class: cls || null, text: t }); };
@@ -676,9 +743,9 @@
         var n = ph.months || 1, sfx = ph.months ? "" : "/mo";
         return el("tr", {}, [
           cell(ph.label),
-          cell(money(ph.amount * n) + sfx),
-          cell(money(keep(ph.amount, "bank") * n) + sfx, "keep"),
-          cell(money(keep(ph.amount, "card") * n) + sfx),
+          cell(money(ph.gross * n) + sfx),
+          cell(money(keep(ph.gross, "bank") * n) + sfx, "keep"),
+          cell(money(keep(ph.gross, "card") * n) + sfx),
         ]);
       });
       var fixed = sm.phases.filter(function (ph) { return ph.months; });
@@ -686,8 +753,8 @@
         body.push(el("tr", {}, [
           cell("Fixed-term total"),
           cell(money(sm.total)),
-          cell(money(fixed.reduce(function (t, ph) { return t + keep(ph.amount, "bank") * ph.months; }, 0)), "keep"),
-          cell(money(fixed.reduce(function (t, ph) { return t + keep(ph.amount, "card") * ph.months; }, 0))),
+          cell(money(fixed.reduce(function (t, ph) { return t + keep(ph.gross, "bank") * ph.months; }, 0)), "keep"),
+          cell(money(fixed.reduce(function (t, ph) { return t + keep(ph.gross, "card") * ph.months; }, 0))),
         ]));
       }
       preview.appendChild(el("div", { class: "nettable-wrap" }, [el("table", { class: "nettable" }, [
@@ -710,10 +777,13 @@
         el("div", { class: "row" }, [
           el("button", { class: "btn", type: "button", text: mode === "pay" ? "Save plan" : "Create plan", onclick: async function (e) {
             e.currentTarget.disabled = true;
-            var r = await api("/api/admin/client", {
+            var r = await api("/api/admin/client", Object.assign({
               id: a.id, action: "plan", mode: mode, start: start.value, requestId: rq,
-              phases: rows.map(function (x) { return { name: x.name, amount: x.amount.replace(/[$,\s]/g, ""), months: Number(x.months), ongoing: x.ongoing }; }),
-            });
+              phases: rows.map(function (x) {
+                var c = toCents(x.amount);
+                return { name: x.name, amount: x.amount.replace(/[$,\s]/g, ""), months: Number(x.months), ongoing: x.ongoing, fee: (fee.feeFor(c) / 100).toFixed(2) };
+              }),
+            }, fee.payload()));
             if (!r.ok) { msg.textContent = r.data.error || "Failed."; confirmBox.textContent = ""; return; }
             openClient(a.id); loadList();
           } }),
@@ -733,68 +803,35 @@
         rows.forEach(function (r) { if (r.ongoing) { r.ongoing = false; if (!r.months) r.months = "12"; } });
         rows.push({ name: "Hosting & maintenance", amount: "", months: "", ongoing: true }); draw();
       } })]),
+      el("div", { class: "row", style: "margin-top:10px" }, fee.row),
+      el("p", { class: "hint", text: "A fee is billed as its own line on every phase, so each invoice shows the work and the fee separately. It can be removed later like an add-on." }),
       preview, feeNote("subscription"), el("div", {}, [createBtn]), confirmBox, msg,
     ]);
   }
 
-  /* One-off payment request. Optional fee: its own line on the invoice and in
-     the email. "Cover card fees" grosses up so a card payment still nets the
-     amount (card % + 30¢ + Invoicing %); paid by bank, I keep a little more. */
-  function coverCardFee(amount) {
-    var pct = FEES.cardPct + FEES.invoicingPct;
-    return Math.ceil((amount + FEES.cardFixed) / (1 - pct)) - amount;
-  }
+  /* One-off payment request, with the same optional fee as a plan. */
   function requestSection(a) {
     var amt = el("input", { class: "i num", inputmode: "decimal", placeholder: "500" });
     var desc = el("input", { class: "i", placeholder: "Logo refresh", autocomplete: "off" });
     var due = el("input", { class: "i num", type: "number", min: "0", max: "90", value: "14" });
-    var feeMode = el("select", { class: "i" }, [
-      el("option", { value: "none", text: "No fee" }),
-      el("option", { value: "cover", text: "Cover my card fees (≈" + ((FEES.cardPct + FEES.invoicingPct) * 100).toFixed(1) + "% + 30¢)" }),
-      el("option", { value: "pct", text: "Percent of amount" }),
-      el("option", { value: "flat", text: "Flat amount" }),
-    ]);
-    var feeVal = el("input", { class: "i num", inputmode: "decimal", placeholder: "3" });
-    var feeValLabel = el("label", { class: "f", style: "flex:0 1 110px;display:none" }, [el("span", { text: "Fee (%)" }), feeVal]);
-    var feeLabel = el("input", { class: "i", value: "Processing fee", maxlength: "60", autocomplete: "off" });
-    var feeLabelWrap = el("label", { class: "f", style: "flex:1 1 180px;display:none" }, ["Fee shows as", feeLabel]);
     var note = el("textarea", { class: "i", rows: "2", placeholder: "Optional note in the email, e.g. Thanks! Rent for November.", "aria-label": "Note to payee" });
     var msg = el("p", { class: "msg err", role: "alert" });
     var btn = el("button", { class: "btn", type: "submit", text: "Send payment request" });
     var breakdown = el("p", { class: "breakdown" });
     var reqNet = el("p", { class: "net" });
+    var fee = feeControls(a, "invoice", function () { update(); });
 
-    function feeCents() {
-      var c = toCents(amt.value), m = feeMode.value, v = Number(String(feeVal.value).replace(/[$,%\s]/g, ""));
-      if (!(c >= 100) || m === "none") return 0;
-      if (m === "cover") return coverCardFee(c);
-      if (!Number.isFinite(v) || v <= 0) return 0;
-      return m === "pct" ? Math.round(c * v / 100) : Math.round(v * 100);
-    }
+    function feeCents() { return fee.feeFor(toCents(amt.value)); }
     function update() {
-      var m = feeMode.value;
-      feeValLabel.style.display = m === "pct" || m === "flat" ? "" : "none";
-      feeValLabel.firstChild.textContent = m === "pct" ? "Fee (%)" : "Fee ($)";
-      feeLabelWrap.style.display = m === "none" ? "none" : "";
       var c = toCents(amt.value), f = feeCents();
       if (!(c >= 100)) { breakdown.textContent = ""; reqNet.textContent = ""; return; }
       breakdown.textContent = f
-        ? "They see: " + (desc.value.trim() || "Amount") + " " + money(c) + " + " + (feeLabel.value.trim() || "Processing fee") + " " + money(f) + " = " + money(c + f) + " total"
+        ? "They see: " + (desc.value.trim() || "Amount") + " " + money(c) + " + " + fee.labelText() + " " + money(f) + " = " + money(c + f) + " total"
         : "";
       reqNet.textContent = keepText(c + f, "invoice", null) + ".";
     }
-    [amt, desc, feeVal, feeLabel].forEach(function (n) { n.addEventListener("input", update); });
-    feeMode.addEventListener("change", update);
-    // Start from this client's last fee choice (saved when a request is sent).
-    var saved = null;
-    try { saved = JSON.parse((a.metadata && a.metadata.request_fee) || "null"); } catch (err) { saved = null; }
-    function applySaved() {
-      feeMode.value = saved && /^(cover|pct|flat)$/.test(saved.m) ? saved.m : "none";
-      feeVal.value = saved && saved.v ? saved.v : "";
-      feeLabel.value = saved && saved.l ? saved.l : "Processing fee";
-      update();
-    }
-    applySaved();
+    [amt, desc].forEach(function (n) { n.addEventListener("input", update); });
+    update();
 
     var rq = rid();
     return el("section", { class: "panel sec" }, [
@@ -803,11 +840,11 @@
       el("form", { novalidate: true, onsubmit: async function (e) {
         e.preventDefault(); msg.textContent = ""; msg.className = "msg err"; btn.disabled = true;
         var f = feeCents();
-        var r = await api("/api/admin/client", {
+        var r = await api("/api/admin/client", Object.assign({
           id: a.id, action: "request", amount: amt.value.replace(/[$,\s]/g, ""), description: desc.value,
-          daysUntilDue: Number(due.value), fee: (f / 100).toFixed(2), feeLabel: feeLabel.value, feeMode: feeMode.value, feeValue: feeVal.value,
+          daysUntilDue: Number(due.value), fee: (f / 100).toFixed(2),
           note: note.value, requestId: rq,
-        });
+        }, fee.payload()));
         btn.disabled = false;
         if (!r.ok) { msg.textContent = r.data.error || "Failed."; return; }
         rq = rid(); amt.value = ""; desc.value = ""; note.value = ""; update();
@@ -821,10 +858,7 @@
           el("label", { class: "f", style: "flex:1 1 90px" }, ["Amount ($)", amt]),
           el("label", { class: "f", style: "flex:0 1 110px" }, ["Due in (days)", due]),
         ]),
-        el("div", { class: "row", style: "margin-top:10px" }, [
-          el("label", { class: "f", style: "flex:1 1 200px" }, ["Add a fee", feeMode]),
-          feeValLabel, feeLabelWrap,
-        ]),
+        el("div", { class: "row", style: "margin-top:10px" }, fee.row),
         el("label", { class: "f", style: "margin-top:10px" }, ["Note (optional)", note]),
         breakdown,
         el("div", { style: "margin-top:12px" }, [btn]),

@@ -1,7 +1,8 @@
 // One client: GET ?id=cus_… for details; POST { id, action, … } to act on them.
 // Actions: code (new sign-in code, returned with a suggested invite), invite
 // (send that invite, body editable first), plan (create a phased
-// plan: starts on a fixed date, or when the client makes the first payment),
+// plan: starts on a fixed date, or when the client makes the first payment;
+// optionally with a fee line on every phase),
 // plan-cancel (only before any charge), addon-add / addon-remove, request
 // (one-off invoice, optionally with a fee line, emailed with a breakdown),
 // invoice-void (cancel an unpaid one-off invoice and email the payee).
@@ -125,7 +126,19 @@ async function sendInvite({ id, code, body }, idem) {
   return json({ emailed: true, to: customer.email, copiedTo: sent?.copiedTo ?? null });
 }
 
-async function createPlan({ id, start, phases, mode }, idem) {
+// The fee choice (mode, value, label) is kept per client so the next plan or
+// request starts from it: a tenant always pays the fee, a web client never does.
+function rememberedFee(feeMode, feeValue, label, hasFee) {
+  const mode = ["cover", "pct", "flat"].includes(feeMode) && hasFee ? feeMode : "none";
+  return mode === "none" ? "" : JSON.stringify({ m: mode, v: String(feeValue ?? "").slice(0, 12), l: label });
+}
+const cleanFee = (v) => (v === undefined || v === null || v === "" ? 0 : cents(v));
+const productOf = (price) => (typeof price.product === "string" ? price.product : price.product.id);
+
+// A plan's optional fee is a second item on every phase (its own product, so
+// it's a separate line on each invoice and in Checkout), sized per phase by
+// the admin page: a percent fee follows the phase amount.
+async function createPlan({ id, start, phases, mode, feeLabel, feeMode, feeValue }, idem) {
   const account = await loadAccount(id, { admin: true, detail: true });
   if (account?.schedule || account?.subscription || account?.pending) {
     return json({ error: "This client already has a plan. Use add-ons, cancel it first, or change it in the Stripe dashboard." }, 409);
@@ -136,44 +149,58 @@ async function createPlan({ id, start, phases, mode }, idem) {
   if (!start || start < today) return json({ error: payToStart ? "Pick a due date of today or later." : "Pick a start date of today or later." }, 400);
   const startDate = start === today ? "now" : centralMidnight(start);
   if (!startDate) return json({ error: "That date isn't valid." }, 400);
+  const label = String(feeLabel ?? "").trim().slice(0, 60) || "Processing fee";
 
   const clean = [];
   for (const [i, p] of phases.entries()) {
     const name = String(p.name ?? "").trim().slice(0, 80);
     const amount = cents(p.amount);
+    const fee = cleanFee(p.fee);
     const ongoing = Boolean(p.ongoing);
     const months = Number(p.months);
     if (!name) return json({ error: `Phase ${i + 1} needs a name (it shows on invoices).` }, 400);
     if (!(amount >= 100 && amount <= 5_000_000)) return json({ error: `Phase ${i + 1} needs an amount between $1 and $50,000.` }, 400);
+    if (!(Number.isInteger(fee) && fee >= 0 && fee <= Math.min(amount, 500_000))) {
+      return json({ error: `Phase ${i + 1}: the fee must be between $0 and the amount (max $5,000).` }, 400);
+    }
+    if (name.toLowerCase() === label.toLowerCase() && fee) return json({ error: `Phase ${i + 1} can't share its name with the fee line.` }, 400);
     if (ongoing && i !== phases.length - 1) return json({ error: "Only the last phase can be ongoing." }, 400);
     if (!ongoing && !(Number.isInteger(months) && months >= 1 && months <= 60)) {
       return json({ error: `Phase ${i + 1} needs 1 to 60 months.` }, 400);
     }
-    clean.push({ name, amount, ongoing, months: ongoing ? 1 : months });
+    clean.push({ name, amount, fee, ongoing, months: ongoing ? 1 : months });
+  }
+  const anyFee = clean.some((p) => p.fee > 0);
+  const remembered = rememberedFee(feeMode, feeValue, label, anyFee);
+  const feeChanged = (account.customer.metadata?.request_fee || "") !== remembered;
+
+  // Items per phase: the work, then the fee line if there is one.
+  const built = [];
+  for (const ph of clean) {
+    const price = await monthlyPrice(ph.name, ph.amount);
+    const items = [[price.id, ph.amount, productOf(price)]];
+    if (ph.fee) {
+      const feePrice = await monthlyPrice(label, ph.fee);
+      items.push([feePrice.id, ph.fee, productOf(feePrice)]);
+    }
+    built.push({ ...ph, items });
   }
 
   if (payToStart) {
     // Nothing is charged yet: the plan waits in metadata for the first payment.
-    const p = [];
-    for (const ph of clean) {
-      const price = await monthlyPrice(ph.name, ph.amount);
-      p.push({ i: [[price.id, ph.amount, typeof price.product === "string" ? price.product : price.product.id]], m: ph.ongoing ? 0 : ph.months });
-    }
+    const p = built.map((ph) => ({ i: ph.items, m: ph.ongoing ? 0 : ph.months }));
     await adminStripe("POST", `customers/${id}`, {
-      metadata: { pending_plan: encodePending({ id: newPendingId(), due: start, p }) },
+      metadata: { pending_plan: encodePending({ id: newPendingId(), due: start, p }), ...(feeChanged ? { request_fee: remembered } : {}) },
     });
     return json({ ok: true, pending: true }, 201);
   }
 
-  const built = [];
-  for (const p of clean) {
-    const price = await monthlyPrice(p.name, p.amount);
-    built.push({
-      items: [{ price: price.id, quantity: 1 }],
-      duration: { interval: "month", interval_count: p.months },
-      proration_behavior: "none",
-    });
-  }
+  if (feeChanged) await adminStripe("POST", `customers/${id}`, { metadata: { request_fee: remembered } });
+  const schedulePhases = built.map((p) => ({
+    items: p.items.map(([price]) => ({ price, quantity: 1 })),
+    duration: { interval: "month", interval_count: p.months },
+    proration_behavior: "none",
+  }));
   const schedule = await adminStripe(
     "POST",
     "subscription_schedules",
@@ -182,7 +209,7 @@ async function createPlan({ id, start, phases, mode }, idem) {
       start_date: startDate,
       end_behavior: clean.at(-1).ongoing ? "release" : "cancel",
       default_settings: { collection_method: "charge_automatically" },
-      phases: built,
+      phases: schedulePhases,
     },
     { idempotencyKey: idem("plan") },
   );
@@ -314,10 +341,7 @@ async function paymentRequest({ id, amount, description, daysUntilDue, fee, feeL
   );
   const final = await adminStripe("POST", `invoices/${invoice.id}/finalize`, { auto_advance: false });
 
-  // Remember this client's fee choice so their next request starts with it
-  // (e.g. a tenant always pays the fee, a web client never does).
-  const mode = ["cover", "pct", "flat"].includes(feeMode) && f ? feeMode : "none";
-  const remembered = mode === "none" ? "" : JSON.stringify({ m: mode, v: String(feeValue ?? "").slice(0, 12), l: label });
+  const remembered = rememberedFee(feeMode, feeValue, label, f > 0);
   if ((customer.metadata?.request_fee || "") !== remembered) {
     await adminStripe("POST", `customers/${id}`, { metadata: { request_fee: remembered } });
   }
