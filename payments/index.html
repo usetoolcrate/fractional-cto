@@ -294,12 +294,24 @@
     document.querySelectorAll("[data-test]").forEach(function (n) { n.hidden = !on; });
   }
 
-  // Months between two phase boundaries (both at midnight Central on the 1st).
+  // Year/month of a phase boundary in Central time. Boundaries are midnight
+  // Central, but Stripe keeps the anchor's UTC clock time, so after a
+  // daylight-saving change one can land at 11pm the night before the 1st.
+  // Nudge past that before reading the Central year/month.
+  function ym(sec) {
+    var p = new Intl.DateTimeFormat("en-US", { timeZone: TZ, year: "numeric", month: "numeric" }).formatToParts(new Date((sec + 3 * 3600) * 1000));
+    var y = 0, m = 0;
+    p.forEach(function (x) { if (x.type === "year") y = +x.value; if (x.type === "month") m = +x.value; });
+    return { y: y, m: m - 1 };
+  }
+  // Noon UTC on the 1st of a Central year/month: formats as that month in Central.
+  function monthStamp(y, m) { return Math.floor(Date.UTC(y, m, 1, 12) / 1000); }
+  function phaseMonth(sec) { var p = ym(sec); return monthYear(monthStamp(p.y, p.m)); }
   // Date of the last charge in a phase of n monthly charges starting at start.
-  function lastCharge(start, n) { var d = new Date(start * 1000); d.setUTCMonth(d.getUTCMonth() + n - 1); return Math.floor(d.getTime() / 1000); }
+  function lastCharge(start, n) { var s = ym(start); return monthStamp(s.y, s.m + n - 1); }
   function monthsBetween(a, b) {
-    var da = new Date(a * 1000), db = new Date(b * 1000);
-    return (db.getUTCFullYear() - da.getUTCFullYear()) * 12 + (db.getUTCMonth() - da.getUTCMonth());
+    var da = ym(a), db = ym(b);
+    return (db.y - da.y) * 12 + (db.m - da.m);
   }
 
   function renderPlan(plan) {
@@ -311,10 +323,10 @@
     plan.forEach(function (p, i) {
       var when;
       if (p.ongoing) {
-        when = "From " + monthYear(p.start) + ", ongoing";
+        when = "From " + phaseMonth(p.start) + ", ongoing";
       } else {
         var n = monthsBetween(p.start, p.end);
-        when = monthYear(p.start) + " – " + monthYear(lastCharge(p.start, n)) + " · " + n + (n === 1 ? " payment" : " payments");
+        when = phaseMonth(p.start) + " – " + phaseMonth(lastCharge(p.start, n)) + " · " + n + (n === 1 ? " payment" : " payments");
       }
       var state = p.current || (p.ongoing && p.start <= now) ? ["Now", "tag"]
         : p.start > now ? (!anyNow && i === 0 ? ["Next", "tag"] : ["Later", "tag later"])

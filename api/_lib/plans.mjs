@@ -43,10 +43,20 @@ export function pendingView(p) {
   return { id: p.id, due: p.due, phases, first: phases[0].amount };
 }
 
+// Months between two billing boundaries, read in Central time. Boundaries are
+// midnight Central but keep the anchor's UTC clock time, so after a
+// daylight-saving change one can land at 11pm the night before the 1st;
+// nudge past that before reading the month (UTC parts drift the same way).
+function monthIndex(sec) {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", year: "numeric", month: "numeric" })
+      .formatToParts(new Date((sec + 3 * 3600) * 1000))
+      .map((x) => [x.type, x.value]),
+  );
+  return Number(p.year) * 12 + Number(p.month) - 1;
+}
 function monthsBetween(a, b) {
-  const da = new Date(a * 1000);
-  const db = new Date(b * 1000);
-  return (db.getUTCFullYear() - da.getUTCFullYear()) * 12 + (db.getUTCMonth() - da.getUTCMonth());
+  return monthIndex(b) - monthIndex(a);
 }
 
 // Turn the subscription created by the first payment into the phased plan.
