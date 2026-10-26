@@ -406,6 +406,35 @@
     $("next-tile").querySelector(".eyebrow").textContent = "Next charge";
     startMode = Boolean(a.pending);
 
+    $("manage-btn").hidden = false;
+
+    // Paid outside Stripe (Venmo, Zelle, a check): nothing to set up here.
+    if (a.manual) {
+      var mOverdue = a.manual.next < todayCentral();
+      var per = a.manual.interval === "year" ? "year" : "month";
+      $("next-tile").querySelector(".eyebrow").textContent = "Next payment";
+      $("next-amount").textContent = money(a.manual.amount);
+      $("next-when").textContent = (mOverdue ? "Was due " : "Due ") + dueText(a.manual.next) + ", by " + a.manual.method + ".";
+      if (mOverdue) $("next-tile").classList.add("warn");
+      $("autopay-tile").querySelector(".eyebrow").textContent = "How you pay";
+      $("autopay-label").textContent = a.manual.method;
+      $("autopay-sub").textContent = "Nothing to set up here. I record each payment when it arrives, and your receipts show below.";
+      $("manage-btn").hidden = true;
+      $("autopay-tile").classList.remove("warn");
+      var list = $("plan");
+      list.textContent = "";
+      $("plan-sec").hidden = false;
+      list.appendChild(el("li", {}, [
+        el("span", { class: "amt", text: money(a.manual.amount) + " / " + per }),
+        el("span", { class: "tag", text: "Now" }),
+        el("span", { class: "when", text: "From " + dueText(a.manual.start) + ", ongoing · paid by " + a.manual.method }),
+      ]));
+      renderInvoices(a.invoices, null, "No receipts yet. One appears here each time a payment is recorded.");
+      show("account");
+      return;
+    }
+    $("autopay-tile").querySelector(".eyebrow").textContent = "Autopay";
+
     if (a.pending) {
       var overdue = a.pending.due < todayCentral();
       $("next-tile").querySelector(".eyebrow").textContent = "First payment";

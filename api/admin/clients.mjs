@@ -24,6 +24,7 @@ export async function GET(request) {
           email: c.email,
           plan: a?.plan ?? [],
           pending: a?.pending ? { due: a.pending.due, first: a.pending.first, phases: a.pending.phases.map((p) => ({ amount: p.amount, months: p.months })) } : null,
+          manual: a?.manual ?? null,
           nextCharge: a?.nextCharge ?? null,
           autopay: a?.autopay ?? null,
           owed: open.reduce((s, i) => s + i.remaining, 0),

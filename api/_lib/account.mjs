@@ -1,5 +1,6 @@
 // Builds one client's billing picture from Stripe. Used by the client portal
 // (/api/pay/account, restricted key) and the admin page (full key, detail on).
+import { decodeManual } from "./manual.mjs";
 import { decodePending, pendingView } from "./plans.mjs";
 import { stripe } from "./stripe.mjs";
 
@@ -70,6 +71,8 @@ export async function loadAccount(customerId, { admin = false, detail = false } 
   // A plan that starts when the client makes the first payment.
   const pendingRaw = decodePending(customer.metadata?.pending_plan);
   const pending = pendingRaw && !schedule && !sub ? pendingView(pendingRaw) : null;
+  // An arrangement paid outside Stripe (Venmo, Zelle, check); see manual.mjs.
+  const manual = decodeManual(customer.metadata?.manual_plan);
 
   let plan = [];
   if (schedule) {
@@ -141,6 +144,7 @@ export async function loadAccount(customerId, { admin = false, detail = false } 
     plan,
     endsAt,
     pending,
+    manual,
     nextCharge,
     autopay: describePaymentMethod(pm),
     invoices: invoices.data

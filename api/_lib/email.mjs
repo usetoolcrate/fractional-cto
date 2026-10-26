@@ -77,15 +77,19 @@ const paragraphs = (s) =>
 // Written in the first person: it comes from my own address. `body` replaces the
 // suggested message; the greeting, link, code box and footer stay put so an
 // edited invite can never go out without the code or the sign-in link.
-export function inviteEmail({ name, code, nextCharge, hasAutopay, pending, body }) {
+export function inviteEmail({ name, code, nextCharge, hasAutopay, pending, manual, body }) {
   const first = String(name || "").trim().split(/\s+/)[0] || "there";
   const url = `${SITE}/payments`;
-  const charge = pending
+  const charge = manual
+    ? `You pay ${money(manual.amount)} a ${manual.interval} by ${manual.method}; the next one is due ${dueDay(manual.next)}.`
+    : pending
     ? `Your first payment of ${money(pending.first)} is due by ${dueDay(pending.due)}. Your plan starts the day you pay, and after that each month's charge happens automatically.`
     : nextCharge
       ? `Your next charge is ${money(nextCharge.amount)} on ${day(nextCharge.date)}.`
       : "";
-  const ask = pending
+  const ask = manual
+    ? "There's nothing to set up: I record each payment when it arrives, and you can sign in any time to see your receipts and what's due next."
+    : pending
     ? "Sign in and choose Pay and start my plan. You can pay from your bank account or with a card; a bank account keeps fees down, but either works."
     : hasAutopay
     ? "Autopay is already set up, so there's nothing you need to do. You can sign in any time to see invoices or change your payment method."

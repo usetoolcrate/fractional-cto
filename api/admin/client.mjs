@@ -5,13 +5,16 @@
 // optionally with a fee line on every phase),
 // plan-cancel (only before any charge), addon-add / addon-remove, request
 // (one-off invoice, optionally with a fee line, emailed with a breakdown),
-// invoice-void (cancel an unpaid one-off invoice and email the payee).
+// invoice-void (cancel an unpaid one-off invoice and email the payee),
+// manual-set / manual-paid / manual-end (an arrangement paid outside Stripe:
+// track what's due, record each payment as a paid-out-of-band invoice).
 import { loadAccount } from "../_lib/account.mjs";
 import { guard, readJson } from "../_lib/admin.mjs";
 import { centralMidnight, monthlyPrice, productNames, todayCentral } from "../_lib/billing.mjs";
 import { generateCode, hashCode } from "../_lib/codes.mjs";
 import { decodePending, encodePending, newPendingId, reconcilePending } from "../_lib/plans.mjs";
 import { inviteEmail, requestEmail, sendEmail, voidEmail } from "../_lib/email.mjs";
+import { addInterval, dayBefore, encodeManual, isYmd, longDay } from "../_lib/manual.mjs";
 import { json } from "../_lib/session.mjs";
 import { adminStripe, dashboardUrl, isTestMode } from "../_lib/stripe.mjs";
 
@@ -67,6 +70,12 @@ export async function POST(request) {
         return await paymentRequest(body, idem);
       case "invoice-void":
         return await voidInvoice(body, idem);
+      case "manual-set":
+        return await setManual(body);
+      case "manual-paid":
+        return await recordManualPayment(body, idem);
+      case "manual-end":
+        return await endManual(body);
       default:
         return json({ error: "Unknown action" }, 400);
     }
@@ -97,6 +106,7 @@ async function composeInvite(id, customer, code, body) {
     nextCharge: account?.nextCharge,
     hasAutopay: Boolean(account?.autopay),
     pending: account?.pending,
+    manual: account?.manual,
     body,
   });
 }
@@ -143,6 +153,7 @@ async function createPlan({ id, start, phases, mode, feeLabel, feeMode, feeValue
   if (account?.schedule || account?.subscription || account?.pending) {
     return json({ error: "This client already has a plan. Use add-ons, cancel it first, or change it in the Stripe dashboard." }, 409);
   }
+  if (account?.manual) return json({ error: "This client pays outside Stripe. End that arrangement first." }, 409);
   if (!Array.isArray(phases) || phases.length < 1 || phases.length > 6) return json({ error: "A plan needs 1 to 6 phases." }, 400);
   const payToStart = mode === "pay";
   const today = todayCentral();
@@ -360,6 +371,82 @@ async function paymentRequest({ id, amount, description, daysUntilDue, fee, feeL
   }
   const sent = await adminStripe("POST", `invoices/${invoice.id}/send`, {});
   return json({ ok: true, number: sent.number, url: sent.hosted_invoice_url, emailed: customer.email || null, viaStripe: true }, 201);
+}
+
+// ---- Paid outside Stripe (Venmo, Zelle, a check) ----
+// Nothing is charged; the arrangement lives in customer metadata so the admin
+// page shows what's due and when. Each payment is recorded as a Stripe invoice
+// marked paid out of band: the client gets a receipt, it shows in both invoice
+// lists, and Stripe charges no fee for it.
+
+function manualBody({ amount, interval, method, next, note }) {
+  const a = cents(amount);
+  const i = interval === "year" ? "year" : interval === "month" ? "month" : null;
+  const m = String(method ?? "").trim().slice(0, 30);
+  const t = String(note ?? "").trim().slice(0, 140);
+  if (!(a >= 100 && a <= 5_000_000)) return { error: "Amount must be between $1 and $50,000." };
+  if (!i) return { error: "Choose monthly or yearly." };
+  if (!m) return { error: "Say how they pay (Venmo, Zelle, check…)." };
+  if (!isYmd(next)) return { error: "Pick the date the next payment is due." };
+  return { amount: a, interval: i, method: m, next, note: t };
+}
+
+async function setManual({ id, amount, interval, method, next, note }) {
+  const account = await loadAccount(id, { admin: true, detail: true });
+  if (account?.schedule || account?.subscription || account?.pending) {
+    return json({ error: "This client has a Stripe plan. Cancel it first if they're switching to paying outside Stripe." }, 409);
+  }
+  const v = manualBody({ amount, interval, method, next, note });
+  if (v.error) return json({ error: v.error }, 400);
+  // Editing keeps the original start date; a new arrangement starts at its first due date.
+  const start = account?.manual?.start && account.manual.start <= v.next ? account.manual.start : v.next;
+  await adminStripe("POST", `customers/${id}`, { metadata: { manual_plan: encodeManual({ ...v, start }) } });
+  return json({ ok: true });
+}
+
+// Records a payment that arrived outside Stripe for the period starting at the
+// next due date, then moves the due date forward one period.
+async function recordManualPayment({ id, amount, paidOn, note }, idem) {
+  const account = await loadAccount(id, { admin: true, detail: true });
+  const m = account?.manual;
+  if (!m) return json({ error: "This client doesn't pay outside Stripe." }, 409);
+  const a = amount === undefined || amount === "" ? m.amount : cents(amount);
+  const on = isYmd(paidOn) ? paidOn : todayCentral();
+  const memo = String(note ?? "").trim().slice(0, 140);
+  if (!(a >= 100 && a <= 5_000_000)) return json({ error: "Amount must be between $1 and $50,000." }, 400);
+  if (on > todayCentral()) return json({ error: "The payment date can't be in the future." }, 400);
+
+  const periodEnd = dayBefore(addInterval(m.next, m.interval));
+  const desc = `${m.interval === "year" ? "Yearly" : "Monthly"} plan, ${longDay(m.next)} – ${longDay(periodEnd)} · paid by ${m.method} on ${longDay(on)}${memo ? ` · ${memo}` : ""}`;
+  const invoice = await adminStripe(
+    "POST",
+    "invoices",
+    {
+      customer: id,
+      collection_method: "send_invoice",
+      days_until_due: 0,
+      description: desc,
+      auto_advance: false,
+      pending_invoice_items_behavior: "exclude",
+      metadata: { portal: "schottky", paid_via: m.method, paid_on: on, period_start: m.next, period_end: periodEnd },
+    },
+    { idempotencyKey: idem("manual") },
+  );
+  await adminStripe("POST", `invoices/${invoice.id}/add_lines`, { lines: [{ amount: a, description: desc }] }, { idempotencyKey: idem("manual-lines") });
+  await adminStripe("POST", `invoices/${invoice.id}/finalize`, { auto_advance: false });
+  const paid = await adminStripe("POST", `invoices/${invoice.id}/pay`, { paid_out_of_band: true }, { idempotencyKey: idem("manual-pay") });
+
+  await adminStripe("POST", `customers/${id}`, {
+    metadata: { manual_plan: encodeManual({ ...m, next: addInterval(m.next, m.interval) }) },
+  });
+  return json({ ok: true, number: paid.number, url: paid.hosted_invoice_url, next: addInterval(m.next, m.interval) }, 201);
+}
+
+async function endManual({ id }) {
+  const account = await loadAccount(id, { admin: true, detail: true });
+  if (!account?.manual) return json({ error: "Nothing to end." }, 409);
+  await adminStripe("POST", `customers/${id}`, { metadata: { manual_plan: "" } });
+  return json({ ok: true });
 }
 
 // Sent invoices can't be deleted in Stripe, only voided: it can no longer be

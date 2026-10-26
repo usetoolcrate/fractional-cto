@@ -292,7 +292,9 @@
   function pendingLine(pd) {
     return "Starts on payment: " + pd.phases.map(function (p) { return money(p.amount) + "/mo" + (p.months ? " × " + p.months : ""); }).join(" → ");
   }
-  function planLine(plan, pending) {
+  function manualLine(m) { return money(m.amount) + (m.interval === "year" ? "/yr" : "/mo") + " by " + m.method + " · next " + dueText(m.next); }
+  function planLine(plan, pending, manual) {
+    if (manual) return manualLine(manual);
     if (pending) return pendingLine(pending);
     if (!plan || !plan.length) return "No plan yet";
     return plan.map(function (p) { return money(p.amount) + "/mo" + (p.ongoing ? "" : " × " + monthsBetween(p.start, p.end)); }).join(" → ");
@@ -305,6 +307,7 @@
     if (c.failed) return ["Payment failed", "bad"];
     if (c.owed) return ["Owes " + money(c.owed), "warn"];
     if (c.pending) return c.pending.due < todayCentral() ? ["First payment overdue", "bad"] : ["Awaiting first payment", "warn"];
+    if (c.manual) return c.manual.next < todayCentral() ? ["Overdue · " + c.manual.method, "bad"] : ["Paid by " + c.manual.method, "ok"];
     if (!c.plan.length) return ["No plan", "muted"];
     if (!c.autopay) return ["No autopay", "warn"];
     return ["Autopay on", "ok"];
@@ -322,7 +325,7 @@
       }, [
         el("span", { class: "nm", text: c.name }),
         el("span", { class: "pill " + p[1], text: p[0] }),
-        el("span", { class: "sub", text: planLine(c.plan, c.pending) }),
+        el("span", { class: "sub", text: planLine(c.plan, c.pending, c.manual) }),
       ])]));
     });
   }
@@ -364,17 +367,19 @@
     ]));
 
     box.appendChild(el("div", { class: "tiles" }, [
+      a.manual ? tile("Next payment", money(a.manual.amount), (a.manual.next < todayCentral() ? "Was due " : "Due ") + dueText(a.manual.next) + " by " + a.manual.method + " · no Stripe fees, you keep all of it") :
       a.pending ? tile("First payment", money(a.pending.first), (a.pending.due < todayCentral() ? "Was due " : "Due by ") + dueText(a.pending.due) +
         " · you keep ≈ " + money(keep(a.pending.first, "bank")) + " by bank") :
       tile("Next charge", a.nextCharge ? money(a.nextCharge.amount) : "—", a.nextCharge
         ? date(a.nextCharge.date) + " · you keep ≈ " + money(keep(a.nextCharge.amount, methodOf(a) || "bank")) + (methodOf(a) ? "" : " by bank")
         : a.endsAt ? "Plan ends " + date(a.endsAt) + "; no more charges" : "Nothing scheduled"),
+      a.manual ? tile("How they pay", a.manual.method, "Outside Stripe · record each payment below") :
       tile("Autopay", a.autopay ? a.autopay.label : "Not set up", a.autopay ? (a.autopay.kind === "bank" ? "Bank (ACH)" : "Card") : "Client sets it up at /payments"),
       tile("Owed now", owedSum ? money(owedSum) : "$0.00", owed.some(function (i) { return i.attempted; }) ? "A payment failed; Stripe is retrying" : owed.length ? owed.length + " open invoice(s)" : "All paid"),
     ]));
 
     box.appendChild(accessSection(a));
-    box.appendChild(a.pending ? pendingSection(a) : a.plan.length ? planSection(a) : designerSection(a));
+    box.appendChild(a.manual ? manualSection(a) : a.pending ? pendingSection(a) : a.plan.length ? planSection(a) : designerSection(a));
     box.appendChild(requestSection(a));
     box.appendChild(invoicesSection(a));
   }
@@ -585,6 +590,112 @@
       feeNote("subscription"),
       notStarted ? cancelControl(a, "Cancel this plan before its first charge on " + (a.plan[0] ? date(a.plan[0].start) : "the start date") + "? Nothing has been charged yet.") : null,
     ]));
+  }
+
+  /* Paid outside Stripe (Venmo, Zelle, a check). Nothing is charged; this just
+     keeps track of what's due and records each payment as a paid receipt. */
+  function manualForm(a, existing, onSaved) {
+    var amt = el("input", { class: "i num", inputmode: "decimal", value: existing ? (existing.amount / 100).toFixed(2) : "", placeholder: "300" });
+    var interval = el("select", { class: "i" }, [
+      el("option", { value: "year", text: "Yearly", selected: !existing || existing.interval === "year" }),
+      el("option", { value: "month", text: "Monthly", selected: existing && existing.interval === "month" }),
+    ]);
+    var method = el("input", { class: "i", value: existing ? existing.method : "Venmo", maxlength: "30", autocomplete: "off", placeholder: "Venmo" });
+    var next = el("input", { class: "i", type: "date", value: existing ? existing.next : todayCentral() });
+    var note = el("input", { class: "i", value: existing ? existing.note : "", maxlength: "140", autocomplete: "off", placeholder: "Website hosting & care" });
+    var msg = el("p", { class: "msg err", role: "alert" });
+    var btn = el("button", { class: "btn", type: "submit", text: existing ? "Save changes" : "Save arrangement" });
+    return el("form", { novalidate: true, onsubmit: async function (e) {
+      e.preventDefault(); msg.textContent = ""; btn.disabled = true;
+      var r = await api("/api/admin/client", { id: a.id, action: "manual-set", amount: amt.value.replace(/[$,\s]/g, ""), interval: interval.value, method: method.value, next: next.value, note: note.value });
+      btn.disabled = false;
+      if (!r.ok) { msg.textContent = r.data.error || "Failed."; return; }
+      onSaved();
+    } }, [
+      el("div", { class: "row" }, [
+        el("label", { class: "f", style: "flex:1 1 90px" }, ["Amount ($)", amt]),
+        el("label", { class: "f", style: "flex:1 1 110px" }, ["Every", interval]),
+        el("label", { class: "f", style: "flex:1 1 120px" }, ["Paid by", method]),
+        el("label", { class: "f", style: "flex:0 1 170px" }, [existing ? "Next due" : "First payment due", next]),
+      ]),
+      el("label", { class: "f", style: "margin-top:10px" }, ["What it's for (optional, shows on receipts)", note]),
+      el("div", { style: "margin-top:12px" }, [btn]),
+      msg,
+    ]);
+  }
+
+  function manualSection(a) {
+    var m = a.manual;
+    var overdue = m.next < todayCentral();
+    var per = m.interval === "year" ? "year" : "month";
+    var msg = el("p", { class: "msg err", role: "alert" });
+    var editBox = el("div", {});
+    var endBox = el("div", {});
+
+    // Record a payment: defaults to the full amount, today.
+    var payAmt = el("input", { class: "i num", inputmode: "decimal", value: (m.amount / 100).toFixed(2) });
+    var payOn = el("input", { class: "i", type: "date", value: todayCentral(), max: todayCentral() });
+    var payNote = el("input", { class: "i", maxlength: "140", autocomplete: "off", placeholder: "Optional, e.g. Venmo from Kathy" });
+    var payBtn = el("button", { class: "btn", type: "submit", text: "Record payment" });
+    var rq = rid();
+    var payForm = el("form", { novalidate: true, onsubmit: async function (e) {
+      e.preventDefault(); msg.textContent = ""; msg.className = "msg err"; payBtn.disabled = true;
+      var r = await api("/api/admin/client", { id: a.id, action: "manual-paid", amount: payAmt.value.replace(/[$,\s]/g, ""), paidOn: payOn.value, note: payNote.value, requestId: rq });
+      payBtn.disabled = false;
+      if (!r.ok) { msg.textContent = r.data.error || "Failed."; return; }
+      rq = rid();
+      msg.className = "msg ok";
+      msg.textContent = "Recorded as receipt " + (r.data.number || "") + ". Next payment is due " + dueText(r.data.next) + ".";
+      setTimeout(function () { openClient(a.id); loadList(); }, 1200);
+    } }, [
+      el("div", { class: "row" }, [
+        el("label", { class: "f", style: "flex:1 1 90px" }, ["Amount received ($)", payAmt]),
+        el("label", { class: "f", style: "flex:0 1 170px" }, ["Received on", payOn]),
+        el("label", { class: "f", style: "flex:2 1 200px" }, ["Note", payNote]),
+      ]),
+      el("div", { style: "margin-top:12px" }, [payBtn]),
+    ]);
+
+    var editBtn = el("button", { class: "link", type: "button", text: "Edit arrangement", onclick: function () {
+      editBox.textContent = "";
+      editBox.appendChild(el("div", { class: "confirm" }, [
+        manualForm(a, m, function () { openClient(a.id); loadList(); }),
+        el("button", { class: "link", type: "button", text: "Never mind", onclick: function () { editBox.textContent = ""; } }),
+      ]));
+    } });
+    var endBtn = el("button", { class: "link bad", type: "button", text: "End arrangement", onclick: function () {
+      endBox.textContent = "";
+      endBox.appendChild(el("div", { class: "confirm" }, [
+        el("p", { text: "Stop tracking this arrangement? Receipts already recorded stay in the invoice list. You can design a Stripe plan afterwards." }),
+        el("div", { class: "row" }, [
+          el("button", { class: "btn danger small", type: "button", text: "End it", onclick: async function (e) {
+            e.currentTarget.disabled = true;
+            var r = await api("/api/admin/client", { id: a.id, action: "manual-end" });
+            if (!r.ok) { msg.textContent = r.data.error || "Failed."; endBox.textContent = ""; return; }
+            openClient(a.id); loadList();
+          } }),
+          el("button", { class: "btn ghost small", type: "button", text: "Keep it", onclick: function () { endBox.textContent = ""; } }),
+        ]),
+      ]));
+    } });
+
+    return el("section", { class: "panel sec" }, [
+      el("div", { class: "row", style: "justify-content:space-between;align-items:center" }, [
+        el("h2", { text: "Paid outside Stripe" }),
+        el("span", { class: "pill " + (overdue ? "bad" : "ok"), text: (overdue ? "Overdue · was due " : "Next due ") + dueText(m.next) }),
+      ]),
+      el("ul", { class: "phases" }, [el("li", {}, [
+        el("span", { class: "amt num", text: money(m.amount) + " / " + per }),
+        el("span", { class: "pill ok", text: m.method }),
+        el("span", { class: "when", text: "Since " + dueText(m.start) + ", ongoing" + (m.note ? " · " + m.note : "") }),
+        el("span", { class: "net", text: "No Stripe fees: you keep " + money(m.amount) + " of every payment." }),
+      ])]),
+      el("p", { class: "hint", text: "Nothing is charged by Stripe. When the money arrives, record it here: the client gets a paid receipt in their invoice list and the due date moves forward one " + per + "." }),
+      el("h3", { style: "font-size:1.05rem;margin-top:6px", text: "Record a payment" }),
+      payForm, msg,
+      el("div", { class: "row", style: "margin-top:10px;gap:16px" }, [editBtn, endBtn]),
+      editBox, endBox,
+    ]);
   }
 
   /* Plan designer for a client with no plan */
@@ -819,7 +930,22 @@
       el("div", { class: "row", style: "margin-top:10px" }, fee.row),
       el("p", { class: "hint", text: "A fee is billed as its own line on every phase, so each invoice shows the work and the fee separately. It can be removed later like an add-on." }),
       preview, feeNote("subscription"), el("div", {}, [createBtn]), confirmBox, msg,
+      manualOffer(a),
     ]);
+  }
+
+  // Under the designer: the alternative for clients who pay by Venmo, Zelle or check.
+  function manualOffer(a) {
+    var box = el("div", {});
+    var open = el("button", { class: "link", type: "button", text: "Pays outside Stripe instead? (Venmo, Zelle, check…)", onclick: function () {
+      box.textContent = "";
+      box.appendChild(el("div", { class: "confirm" }, [
+        el("p", { class: "hint", text: "No Stripe charges. I'll keep track of what's due, you record each payment when it arrives, and the client gets a paid receipt." }),
+        manualForm(a, null, function () { openClient(a.id); loadList(); }),
+        el("button", { class: "link", type: "button", text: "Never mind", onclick: function () { box.textContent = ""; } }),
+      ]));
+    } });
+    return el("div", { style: "margin-top:18px;padding-top:14px;border-top:1px solid var(--line, #e2dcd0)" }, [open, box]);
   }
 
   /* One-off payment request, with the same optional fee as a plan. */
