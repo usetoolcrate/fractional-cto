@@ -13,7 +13,7 @@ import { guard, readJson } from "../_lib/admin.mjs";
 import { centralMidnight, monthlyPrice, productNames, todayCentral } from "../_lib/billing.mjs";
 import { generateCode, hashCode } from "../_lib/codes.mjs";
 import { decodePending, encodePending, newPendingId, reconcilePending } from "../_lib/plans.mjs";
-import { inviteEmail, requestEmail, sendEmail, voidEmail } from "../_lib/email.mjs";
+import { inviteEmail, receiptEmail, requestEmail, sendEmail, voidEmail } from "../_lib/email.mjs";
 import { addInterval, dayBefore, encodeManual, isYmd, longDay } from "../_lib/manual.mjs";
 import { json } from "../_lib/session.mjs";
 import { adminStripe, dashboardUrl, isTestMode } from "../_lib/stripe.mjs";
@@ -436,10 +436,29 @@ async function recordManualPayment({ id, amount, paidOn, note }, idem) {
   await adminStripe("POST", `invoices/${invoice.id}/finalize`, { auto_advance: false });
   const paid = await adminStripe("POST", `invoices/${invoice.id}/pay`, { paid_out_of_band: true }, { idempotencyKey: idem("manual-pay") });
 
-  await adminStripe("POST", `customers/${id}`, {
-    metadata: { manual_plan: encodeManual({ ...m, next: addInterval(m.next, m.interval) }) },
-  });
-  return json({ ok: true, number: paid.number, url: paid.hosted_invoice_url, next: addInterval(m.next, m.interval) }, 201);
+  const next = addInterval(m.next, m.interval);
+  await adminStripe("POST", `customers/${id}`, { metadata: { manual_plan: encodeManual({ ...m, next }) } });
+
+  // Stripe doesn't email anything for a payment it didn't take, so the receipt
+  // (with the next due date) goes out from here. A failed email never undoes
+  // the recorded payment; the admin page says whether it was sent.
+  let emailed = null, copiedTo = null, emailError = null;
+  const email = account.customer?.email;
+  if (email) {
+    try {
+      const mail = receiptEmail({
+        name: account.customer.name, number: paid.number, amount: a, method: m.method, paidOn: on,
+        periodStart: m.next, periodEnd, interval: m.interval, nextDue: next, nextAmount: m.amount,
+        url: paid.hosted_invoice_url, note: m.note,
+      });
+      const sent = await sendEmail({ to: email, ...mail, idempotencyKey: idem("manual-receipt") });
+      emailed = email; copiedTo = sent?.copiedTo ?? null;
+    } catch (err) {
+      console.error("receipt email failed", err.message);
+      emailError = err.message;
+    }
+  }
+  return json({ ok: true, number: paid.number, url: paid.hosted_invoice_url, next, emailed, copiedTo, emailError }, 201);
 }
 
 async function endManual({ id }) {

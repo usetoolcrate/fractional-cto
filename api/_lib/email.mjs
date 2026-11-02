@@ -203,6 +203,42 @@ ${message ? paragraphs(message) : ""}
 }
 
 // One-time sign-in link for /payments (no code needed). Not copied to me.
+// Receipt for a payment that arrived outside Stripe (Venmo, Zelle, a check).
+// Links the paid Stripe invoice so they can download a PDF for their records.
+export function receiptEmail({ name, number, amount, method, paidOn, periodStart, periodEnd, interval, nextDue, nextAmount, url, note }) {
+  const first = String(name || "").trim().split(/\s+/)[0] || "there";
+  const per = interval === "year" ? "year" : "month";
+  const what = note ? `${note} for ${dueDay(periodStart)} – ${dueDay(periodEnd)}` : `${dueDay(periodStart)} – ${dueDay(periodEnd)}`;
+  const text = [
+    `Hi ${first},`,
+    "",
+    `Thank you! I received your ${method} payment of ${money(amount)} on ${dueDay(paidOn)}. That covers ${what}, so you're all set for the ${per}.`,
+    "",
+    `Your next payment of ${money(nextAmount)} is due ${dueDay(nextDue)}. I'll send a reminder before then.`,
+    "",
+    `Receipt ${number} (PDF for your records):`,
+    url,
+    "",
+    "Questions? Just reply to this email.",
+  ].join("\n");
+  const row = (label, value, strong) =>
+    `<tr><td style="padding:10px 0;border-top:1px solid #e2dcd0${strong ? ";font-weight:700" : ""}">${esc(label)}</td><td style="padding:10px 0;border-top:1px solid #e2dcd0;text-align:right;white-space:nowrap${strong ? ";font-weight:700" : ""}">${esc(value)}</td></tr>`;
+  const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#faf8f4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;color:#1c1e21;font-size:16px;line-height:1.6">
+<div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e2dcd0;border-radius:10px;padding:28px">
+<p style="margin:0 0 16px">Hi ${esc(first)},</p>
+<p style="margin:0 0 16px">Thank you! I received your ${esc(method)} payment of <strong>${money(amount)}</strong> on ${esc(dueDay(paidOn))}. That covers ${esc(what)}, so you're all set for the ${per}.</p>
+<table role="presentation" style="width:100%;border-collapse:collapse;margin:4px 0 8px;font-size:16px">
+${row("Paid", `${money(amount)} by ${method}`)}
+${row("Period", `${dueDay(periodStart)} – ${dueDay(periodEnd)}`)}
+${row("Next payment", `${money(nextAmount)} due ${dueDay(nextDue)}`, true)}
+</table>
+<p style="margin:16px 0 20px"><a href="${esc(url)}" style="display:inline-block;background:#1f5c48;color:#fff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:6px">View receipt ${esc(number)}</a></p>
+<p style="margin:0 0 16px;font-size:14px;color:#4a4f56">The receipt page has a PDF you can download for your records. I'll send a reminder before the next payment is due.</p>
+<p style="margin:0;font-size:14px;color:#4a4f56">Questions? Just reply to this email.</p>
+</div></body></html>`;
+  return { subject: `Receipt: ${money(amount)} received by ${method} (next due ${dueDay(nextDue)})`, text, html };
+}
+
 export function signInEmail({ name, url }) {
   const first = String(name || "").trim().split(/\s+/)[0] || "there";
   const text = [

@@ -645,8 +645,9 @@
       if (!r.ok) { msg.textContent = r.data.error || "Failed."; return; }
       rq = rid();
       msg.className = "msg ok";
-      msg.textContent = "Recorded as receipt " + (r.data.number || "") + ". Next payment is due " + dueText(r.data.next) + ".";
-      setTimeout(function () { openClient(a.id); loadList(); }, 1200);
+      msg.textContent = "Recorded as receipt " + (r.data.number || "") + ". Next payment is due " + dueText(r.data.next) + "."
+        + (r.data.emailed ? " Receipt emailed to " + r.data.emailed + (r.data.copiedTo ? " (copy to " + r.data.copiedTo + ")" : "") + "." : r.data.emailError ? " The receipt email failed: " + r.data.emailError : " No email on file, so no receipt was sent.");
+      setTimeout(function () { openClient(a.id); loadList(); }, 3500);
     } }, [
       el("div", { class: "row" }, [
         el("label", { class: "f", style: "flex:1 1 90px" }, ["Amount received ($)", payAmt]),
@@ -690,7 +691,7 @@
         el("span", { class: "when", text: "Since " + dueText(m.start) + ", ongoing" + (m.note ? " · " + m.note : "") }),
         el("span", { class: "net", text: "No Stripe fees: you keep " + money(m.amount) + " of every payment." }),
       ])]),
-      el("p", { class: "hint", text: "Nothing is charged by Stripe. When the money arrives, record it here: the client gets a paid receipt in their invoice list and the due date moves forward one " + per + "." }),
+      el("p", { class: "hint", text: "Nothing is charged by Stripe. When the money arrives, record it here: the client gets an emailed receipt with the next due date, it shows as paid in their invoice list, and the due date moves forward one " + per + "." }),
       el("h3", { style: "font-size:1.05rem;margin-top:6px", text: "Record a payment" }),
       payForm, msg,
       el("div", { class: "row", style: "margin-top:10px;gap:16px" }, [editBtn, endBtn]),
