@@ -70,3 +70,11 @@ printf '%s' "$VALUE" | node scripts/seal.mjs
 ```
 
 If `SITES_PRIVATE_KEY` is ever replaced, the saved passwords can't be opened any more; type them in again in the admin.
+
+### Stats on the Sites page
+
+Each site can carry an Analytics property ID, a Search Console property and a Clarity project ID (edit the site, "Stats"). `api/_lib/stats.mjs` reads the last 28 days (and the 28 before) from both Google APIs and caches them for three hours in the same Blob store (`stats/<env>.json`); "Refresh" on the page skips the cache.
+
+There is no Google key anywhere. Google Cloud project `schottky-site-stats` (owner alexschottky@gmail.com) has a Workload Identity Federation pool `vercel` with provider `fractional-cto`, which trusts Vercel's OIDC tokens (issuer `https://oidc.vercel.com/aschottkys-projects`) only for this project. The token is exchanged for one of the read-only service account `site-stats@schottky-site-stats.iam.gserviceaccount.com` (`api/_lib/google.mjs`).
+
+To add a site's stats: in Analytics, add that service account as a **Viewer** on the property (Admin → Property access management, notification email off); in Search Console, add it as a **Restricted** user (Settings → Users and permissions). Then put the IDs on the site.

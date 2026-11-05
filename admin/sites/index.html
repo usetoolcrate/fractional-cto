@@ -91,6 +91,31 @@
   .s-body.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px 32px;align-items:start}
   .s-body.two .c-foot{grid-column:1 / -1}
   .s-main,.s-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .totals{margin-top:2px}
+  .totals:empty{display:none}
+
+  /* Stats: a line on each row, and a panel when it's open */
+  .s-stat{font-size:.8rem;color:var(--accent);font-weight:500;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:center}
+  .s-stat:empty{display:none}
+  .live{display:inline-flex;align-items:center;gap:5px;color:#1a7f4b;font-weight:700;font-size:.74rem}
+  .live::before{content:"";width:7px;height:7px;border-radius:50%;background:#2fb36b;box-shadow:0 0 0 3px #d5f0e1}
+  .s-stats{grid-column:1 / -1;display:flex;flex-direction:column;gap:12px;border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--paper)}
+  .k-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px}
+  .k-tile{display:flex;flex-direction:column;gap:1px;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0}
+  .k-tile .k,.k-list .k{font-size:.68rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint)}
+  .k-tile .v{font-family:'Newsreader',Georgia,serif;font-size:1.4rem;line-height:1.2;font-variant-numeric:tabular-nums}
+  .k-tile .d{font-size:.72rem;color:var(--ink-faint)}
+  .k-tile .d.up{color:var(--accent)}
+  .k-tile .d.down{color:var(--alert)}
+  .k-lists{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  .k-list ol{list-style:none;margin-top:4px;font-size:.84rem}
+  .k-list li{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line)}
+  .k-list li .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .k-list li .c{color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .k-list .none{font-size:.84rem;color:var(--ink-soft);margin-top:4px}
+  .k-links{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:.85rem;font-weight:500}
+  .k-links a{text-decoration:none}
+  .k-err{color:var(--alert);font-weight:400;font-size:.8rem}
   .c-links{display:flex;gap:6px 18px;flex-wrap:wrap;font-size:.9rem;font-weight:500}
   .c-links a{text-decoration:none;overflow-wrap:anywhere}
   .c-links a:hover{text-decoration:underline}
@@ -122,7 +147,7 @@
   .confirm{border:1px solid #e8d7b6;background:var(--brass-tint);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;font-size:.9rem}
 
   @media (max-width:900px){
-    .s-body.two{display:flex}
+    .s-body.two{display:flex;align-items:stretch}
     .s-body{padding-left:16px}
     .bar,.wrap{padding-inline:16px}
   }
@@ -159,6 +184,7 @@
   <div class="top">
     <h1>Sites</h1>
     <p class="meta"><span id="count">Loading…</span><button class="link" id="toggle-all" type="button" hidden>Open all</button></p>
+    <p class="meta totals" id="totals"></p>
   </div>
   <div class="tools">
     <input class="i" id="q" type="search" placeholder="Search sites" aria-label="Search sites"
@@ -171,7 +197,7 @@
 
 <script>
 (function () {
-  var GROUPS = [["client", "Client sites"], ["business", "My businesses"], ["app", "Apps & tools"], ["property", "Properties"]];
+  var GROUPS = [["client", "Client sites"], ["business", "My businesses"], ["app", "Apps & tools"], ["property", "Properties"], ["proposal", "Proposals & demos"]];
   var STATUSES = [["live", "Live", "ok"], ["building", "Building", "warn"], ["paused", "Paused", "muted"], ["retired", "Retired", "muted"]];
   var DOTS = "••••••••••";
   var $ = function (id) { return document.getElementById(id); };
@@ -215,6 +241,7 @@
     state.sites = r.data.sites;
     showApp();
     render();
+    if (!state.stats) loadStats(false);
   }
 
   /* ---------- helpers ---------- */
@@ -350,16 +377,20 @@
       }, [])) : null,
       s.notes ? el("p", { class: "c-notes", text: s.notes }) : null,
     ].filter(Boolean);
+    var statLine = el("span", { class: "s-stat" });
+    var statBox = el("div", { class: "s-stats", hidden: true });
     var d = el("details", { class: "site", "data-id": s.id, open: isOpen }, [
       el("summary", {}, [el("span", { class: "s-row" }, [
         el("span", { class: "chev", "aria-hidden": "true" }),
         el("span", { class: "s-title" }, [
           el("span", { class: "s-name", text: s.name }),
           el("span", { class: "s-sub", text: [s.url ? host(s.url) : "", who].filter(Boolean).join(" · ") }),
+          statLine,
         ]),
         el("span", { class: "pill " + st[2], text: st[1] }),
       ])]),
       el("div", { class: "s-body" + (main.length && side.length ? " two" : "") }, [
+        statBox,
         main.length ? el("div", { class: "s-main" }, main) : null,
         side.length ? el("div", { class: "s-side" }, side) : null,
         el("div", { class: "c-foot" }, [
@@ -369,11 +400,115 @@
       ]),
     ]);
     d._hay = haystack(s);
+    d._paint = function () { paintStats(s, statLine, statBox); };
+    d._paint();
     d.addEventListener("toggle", function () {
       if (!d.open && state.autoId === s.id) state.autoId = null;
       syncToggle();
     });
     return d;
+  }
+
+  /* ---------- stats (Google Analytics + Search Console, last 28 days) ---------- */
+  var n = function (v) { return Math.round(v || 0).toLocaleString("en-US"); };
+  var plural = function (v, one, many) { return n(v) + " " + (Math.round(v) === 1 ? one : many); };
+  function change(now, before) {
+    if (!before) return now ? { text: "new", cls: "up" } : null;
+    var pct = Math.round(((now - before) / before) * 100);
+    return { text: (pct > 0 ? "▲ " : pct < 0 ? "▼ " : "") + Math.abs(pct) + "%", cls: pct > 0 ? "up" : pct < 0 ? "down" : "" };
+  }
+  function tile(label, value, now, before, hint) {
+    var c = before === undefined ? null : change(now, before);
+    return el("div", { class: "k-tile", title: hint || null }, [
+      el("span", { class: "k", text: label }),
+      el("span", { class: "v", text: value }),
+      c ? el("span", { class: "d " + c.cls, text: c.text + " (was " + n(before) + ")", title: "Compared with the 28 days before" }) : null,
+    ]);
+  }
+  function list(title, rows, empty) {
+    return el("div", { class: "k-list" }, [
+      el("span", { class: "k", text: title }),
+      rows.length
+        ? el("ol", {}, rows.map(function (r) { return el("li", {}, [el("span", { class: "nm", text: r[0] }), el("span", { class: "c", text: r[1] })]); }))
+        : el("p", { class: "none", text: empty }),
+    ]);
+  }
+  function leadHint(ev) {
+    var parts = [["generate_lead", "forms"], ["phone_click", "calls"], ["text_click", "texts"], ["email_click", "emails"]]
+      .filter(function (p) { return ev[p[0]]; }).map(function (p) { return n(ev[p[0]]) + " " + p[1]; });
+    return parts.length ? parts.join(" · ") : "Forms sent and taps on phone, text and email links";
+  }
+
+  function paintStats(s, line, box) {
+    var st = state.stats && state.stats.sites && state.stats.sites[s.id];
+    line.textContent = "";
+    box.textContent = "";
+    box.hidden = true;
+    if (!st) return;
+    var ga = st.ga, sc = st.search, bits = [];
+    if (ga) bits.push(plural(ga.now.users, "visitor", "visitors"), plural(ga.now.leads, "lead", "leads"));
+    if (ga && ga.now.revenue) bits.push("$" + n(ga.now.revenue) + " sales");
+    if (sc) bits.push(plural(sc.now.clicks, "Google click", "Google clicks"));
+    line.title = "Last 28 days";
+    line.appendChild(el("span", { text: bits.join(" · ") }));
+    if (ga && ga.live) line.appendChild(el("span", { class: "live", text: n(ga.live) + " on now" }));
+
+    var tiles = [];
+    if (ga) {
+      tiles.push(tile("Visitors", n(ga.now.users), ga.now.users, ga.before.users));
+      tiles.push(tile("Visits", n(ga.now.sessions), ga.now.sessions, ga.before.sessions));
+      tiles.push(tile("Leads", n(ga.now.leads), ga.now.leads, ga.before.leads, leadHint(ga.now.events || {})));
+      if (ga.now.revenue || ga.before.revenue) tiles.push(tile("Sales", "$" + n(ga.now.revenue), ga.now.revenue, ga.before.revenue, plural(ga.now.sales, "sale", "sales")));
+    }
+    if (sc) {
+      tiles.push(tile("Google clicks", n(sc.now.clicks), sc.now.clicks, sc.before.clicks));
+      tiles.push(tile("Shown in Google", n(sc.now.impressions), sc.now.impressions, sc.before.impressions, "Times the site came up in Google results"));
+      if (sc.now.position) tiles.push(tile("Avg. position", sc.now.position.toFixed(1), undefined, undefined, "Average rank in Google results (1 is the top)"));
+    }
+    var lists = [];
+    if (ga) lists.push(list("Top pages", ga.pages.map(function (p) { return [p.path, n(p.views)]; }), "No page views yet."));
+    if (sc) lists.push(list("Top Google searches", sc.queries.map(function (q) { return [q.query, plural(q.clicks, "click", "clicks")]; }), "No searches yet."));
+    var links = [
+      s.analytics ? el("a", { href: "https://analytics.google.com/analytics/web/#/p" + s.analytics + "/reports/intelligenthome", target: "_blank", rel: "noopener", text: "Analytics ↗" }) : null,
+      s.searchConsole ? el("a", { href: "https://search.google.com/search-console/performance/search-analytics?resource_id=" + encodeURIComponent(s.searchConsole), target: "_blank", rel: "noopener", text: "Search Console ↗" }) : null,
+      s.clarity ? el("a", { href: "https://clarity.microsoft.com/projects/view/" + s.clarity + "/dashboard", target: "_blank", rel: "noopener", text: "Clarity recordings ↗" }) : null,
+    ];
+    box.appendChild(el("div", { class: "k-tiles" }, tiles));
+    if (lists.length) box.appendChild(el("div", { class: "k-lists" }, lists));
+    box.appendChild(el("div", { class: "k-links" }, links.concat([
+      st.error ? el("span", { class: "k-err", text: "Some numbers didn't load: " + st.error }) : null,
+    ])));
+    box.hidden = false;
+  }
+
+  function paintTotals() {
+    var box = $("totals");
+    box.textContent = "";
+    if (!state.stats) return;
+    var t = { users: 0, leads: 0, revenue: 0, clicks: 0 };
+    state.sites.forEach(function (s) {
+      var st = state.stats.sites[s.id];
+      if (!st) return;
+      // Demo pages share their host's property (analyticsPath); count each property once.
+      if (st.ga && !s.analyticsPath) { t.users += st.ga.now.users; t.leads += st.ga.now.leads; t.revenue += st.ga.now.revenue; }
+      if (st.search) t.clicks += st.search.now.clicks;
+    });
+    var mins = Math.max(0, Math.round((Date.now() - state.stats.at) / 60000));
+    box.appendChild(document.createTextNode("Last 28 days, all sites: " + [plural(t.users, "visitor", "visitors"), plural(t.leads, "lead", "leads")]
+      .concat(t.revenue ? ["$" + n(t.revenue) + " in sales"] : []).concat([plural(t.clicks, "Google search click", "Google search clicks")]).join(" · ")
+      + " · updated " + (mins < 1 ? "just now" : mins < 60 ? mins + " min ago" : Math.round(mins / 60) + " h ago")));
+    box.appendChild(el("button", { class: "link", type: "button", text: "Refresh", onclick: function () { loadStats(true); } }));
+  }
+
+  async function loadStats(fresh) {
+    $("totals").textContent = fresh ? "Refreshing the numbers…" : "Loading the numbers…";
+    var r = await fetch("/api/admin/sites?stats=" + (fresh ? "fresh" : "1"), { credentials: "same-origin" });
+    var data = {};
+    try { data = await r.json(); } catch (e) {}
+    if (!r.ok) { $("totals").textContent = data.error || "Couldn't load the numbers."; return; }
+    state.stats = data;
+    document.querySelectorAll("details.site").forEach(function (d) { if (d._paint) d._paint(); });
+    paintTotals();
   }
 
   function secretRow(s, x) {
@@ -415,6 +550,10 @@
       client: text(s.client, { placeholder: "Name · email · phone" }),
       launched: text(s.launched, { type: "date" }),
       notes: el("textarea", { class: "i", value: s.notes || "" }),
+      analytics: text(s.analytics, { inputmode: "numeric", placeholder: "e.g. 562591540" }),
+      analyticsPath: text(s.analyticsPath, { placeholder: "Only for a page on a shared site, e.g. /demo", autocapitalize: "off" }),
+      searchConsole: text(s.searchConsole, { placeholder: "https://example.com/ or sc-domain:example.com", autocapitalize: "off" }),
+      clarity: text(s.clarity, { placeholder: "Clarity project ID", autocapitalize: "off" }),
     };
 
     var details = el("div", { class: "rows" });
@@ -470,6 +609,9 @@
       details,
       el("div", {}, [el("button", { class: "link", type: "button", text: "+ Add a detail", onclick: function () { addDetail({ k: "", v: "" }); } })]),
       el("label", { class: "f" }, ["Notes", f.notes]),
+      el("p", { class: "sub-h" }, ["Stats ", el("span", { class: "hint", text: "(Analytics property ID is under Admin → Property details)" })]),
+      el("div", { class: "grid2" }, [el("label", { class: "f" }, ["Analytics property ID", f.analytics]), el("label", { class: "f" }, ["Analytics page path", f.analyticsPath])]),
+      el("div", { class: "grid2" }, [el("label", { class: "f" }, ["Search Console property", f.searchConsole]), el("label", { class: "f" }, ["Clarity project ID", f.clarity])]),
       msg,
       el("div", { class: "actions" }, [
         save,
@@ -485,6 +627,7 @@
       var site = {
         id: s.id, name: f.name.value, group: f.group.value, status: f.status.value, url: f.url.value.trim(), admin: f.admin.value.trim(),
         client: f.client.value, launched: f.launched.value, notes: f.notes.value,
+        analytics: f.analytics.value.trim(), analyticsPath: f.analyticsPath.value.trim(), searchConsole: f.searchConsole.value.trim(), clarity: f.clarity.value.trim(),
         details: Array.prototype.map.call(details.children, function (row) { var i = row.querySelectorAll("input"); return { k: i[0].value, v: i[1].value }; }),
         secrets: Array.prototype.map.call(secrets.children, function (row) {
           return { id: row._secret.id, label: row._secret.label.value, value: row._secret.value.value };
@@ -520,6 +663,7 @@
     await api(undefined, "DELETE");
     state = { sites: [], editing: null, query: "", reopen: null, autoId: null };
     $("groups").textContent = "";
+    $("totals").textContent = "";
     $("q").value = "";
     showLogin();
   });

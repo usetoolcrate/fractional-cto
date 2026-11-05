@@ -1,10 +1,13 @@
 // The site list for /admin/sites (see api/_lib/sites.mjs). GET lists every
-// site with its passwords' labels only; POST { action, … } acts on it.
+// site with its passwords' labels only; GET ?stats=1 (or =fresh to skip the
+// cache) returns their Analytics and Search Console numbers (stats.mjs);
+// POST { action, … } acts on the list.
 // Actions: reveal (one password, decrypted), save (add or update a site; a
 // password left blank keeps its saved value), delete.
 import { guard, readJson } from "../_lib/admin.mjs";
 import { json } from "../_lib/session.mjs";
 import { GROUPS, cleanSite, loadRegistry, newId, saveRegistry, seal, unseal } from "../_lib/sites.mjs";
+import { getStats } from "../_lib/stats.mjs";
 
 const visible = (s) => ({ ...s, secrets: s.secrets.map(({ sealed, ...x }) => ({ ...x, saved: Boolean(sealed) })) });
 // By kind; within a kind, in the order they were added (the main clients first).
@@ -13,12 +16,18 @@ const order = (a, b) => GROUPS.indexOf(a.group) - GROUPS.indexOf(b.group);
 export async function GET(request) {
   const denied = guard(request);
   if (denied) return denied;
+  const stats = new URL(request.url).searchParams.get("stats");
   try {
     const { sites } = await loadRegistry();
+    if (stats) {
+      // Vercel's OIDC token for this request proves to Google it's this project (google.mjs).
+      const oidc = request.headers.get("x-vercel-oidc-token") || process.env.VERCEL_OIDC_TOKEN;
+      return json(await getStats(sites, oidc, { fresh: stats === "fresh" }));
+    }
     return json({ sites: sites.slice().sort(order).map(visible) });
   } catch (err) {
-    console.error("sites list failed", err.message);
-    return json({ error: "Couldn't load the site list." }, 500);
+    console.error(stats ? "site stats failed" : "sites list failed", err.message);
+    return json({ error: stats ? `Couldn't load the stats: ${err.message}` : "Couldn't load the site list." }, 500);
   }
 }
 
