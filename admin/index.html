@@ -31,6 +31,10 @@
   .logo{font-family:'Newsreader',serif;font-size:1.15rem;font-weight:600;color:var(--ink);text-decoration:none}
   .logo span{color:var(--accent)}
   .bar-right{display:flex;align-items:center;gap:14px;font-size:.85rem;color:var(--ink-soft)}
+  .tabs{display:flex;gap:2px;margin-left:10px;margin-right:auto}
+  .tabs a{font-size:.88rem;font-weight:600;color:var(--ink-soft);text-decoration:none;padding:6px 10px;border-radius:6px}
+  .tabs a:hover{background:var(--paper-deep)}
+  .tabs a[aria-current="page"]{color:var(--accent);background:var(--accent-tint)}
   .pill{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:999px;white-space:nowrap}
   .pill.test{color:var(--brass);background:var(--brass-tint);border:1px solid #e8d7b6}
   .pill.ok{color:var(--accent);background:var(--accent-tint)}
@@ -165,9 +169,9 @@
 <header>
   <div class="bar">
     <a class="logo" href="/">Schottky <span>LLC</span></a>
+    <nav class="tabs" aria-label="Admin pages"><a href="/admin" aria-current="page">Clients</a><a href="/admin/sites">Sites</a></nav>
     <div class="bar-right">
       <span class="pill test" id="test-pill" hidden>Stripe test mode</span>
-      <span class="lbl">Client admin</span>
       <button class="link" id="signout" type="button" hidden>Sign out</button>
     </div>
   </div>

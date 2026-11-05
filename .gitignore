@@ -6,3 +6,7 @@ proposals/
 # Local secrets
 .env*.local
 .env
+.env*
+
+# Site list seed for /admin/sites: client details, sealed passwords — deployed, never in git (public repo)
+api/_lib/sites-seed.mjs

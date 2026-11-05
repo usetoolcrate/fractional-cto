@@ -56,3 +56,17 @@ This is safe to re-run. It creates:
 ## Adding the $360 social add-on to a client later
 
 Update the client's schedule: add the `sw_social_360` price as a second item in **every** current and future phase, in one update. Stripe unsets anything you leave out.
+
+## Site list (schottky.com/admin/sites)
+
+Every site I've built, with its links, client, details and passwords, behind the same admin sign-in. The repo is public, so the list isn't in it:
+
+- The list is one JSON file per environment (`sites/production.json`, `sites/preview.json`) in the private Blob store `schottky-sites`, linked to this project (`BLOB_READ_WRITE_TOKEN`).
+- Passwords are sealed before they're stored: RSA-OAEP wraps a one-off AES-256-GCM key. The private key is `SITES_PRIVATE_KEY` (base64 PEM, sensitive, Production and Preview); the public half is `scripts/sites-public.pem`. The stored file and the Blob browser show no passwords.
+- `api/_lib/sites-seed.mjs` (git-ignored, but deployed) holds starter entries. Each is added once by id, so a site removed in the admin stays removed. To add a site from here, append it with a new id and deploy. Seal a password for it with:
+
+```bash
+printf '%s' "$VALUE" | node scripts/seal.mjs
+```
+
+If `SITES_PRIVATE_KEY` is ever replaced, the saved passwords can't be opened any more; type them in again in the admin.
