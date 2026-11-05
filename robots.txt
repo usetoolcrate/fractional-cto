@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /admin
+Disallow: /payments
+Disallow: /api/
+Disallow: /ads/
+
+Sitemap: https://schottky.com/sitemap.xml
