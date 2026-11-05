@@ -62,18 +62,35 @@
   .login h1{font-size:2rem}
 
   .wrap{max-width:1240px;margin:0 auto;padding:24px 20px 60px}
-  .top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
   .top h1{font-size:2rem}
-  .top .meta{color:var(--ink-soft);font-size:.9rem}
-  .tools{display:flex;gap:10px;align-items:center}
-  .tools .i{width:300px}
-  .group{margin-top:30px}
-  .group h2{font-size:1.35rem;margin-bottom:12px}
-  .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+  .top .meta{color:var(--ink-soft);font-size:.9rem;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  /* The search stays in reach under the header while the list scrolls. */
+  .tools{position:sticky;top:58px;z-index:4;background:var(--paper);display:flex;gap:10px;align-items:center;padding:14px 0 10px;margin-top:6px}
+  .tools .i{flex:1;max-width:520px;font-size:1rem}
+  .tools .btn{margin-left:auto}
+  .group{margin-top:22px}
+  .group h2{font-size:1.25rem;margin-bottom:10px}
+  .list{display:flex;flex-direction:column;gap:8px}
   .panel{background:var(--card);border:1px solid var(--line);border-radius:10px}
   .card{padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
-  .c-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-  .c-head h3{font-size:1.35rem}
+
+  details.site{background:var(--card);border:1px solid var(--line);border-radius:10px;min-width:0}
+  details.site[open]{border-color:#cdc4b2;box-shadow:0 1px 3px rgba(28,30,33,.06)}
+  details.site>summary{display:block;list-style:none;cursor:pointer;padding:12px 16px;border-radius:10px}
+  details.site>summary::-webkit-details-marker{display:none}
+  details.site>summary:hover{background:var(--paper)}
+  details.site[open]>summary{border-radius:10px 10px 0 0}
+  .s-row{display:flex;align-items:center;gap:12px;min-width:0}
+  .chev{flex:none;width:8px;height:8px;margin:0 2px 3px;border-right:2px solid var(--ink-faint);border-bottom:2px solid var(--ink-faint);transform:rotate(-45deg);transition:transform .15s}
+  details.site[open] .chev{transform:rotate(45deg);margin-bottom:6px}
+  .s-title{display:flex;flex-direction:column;min-width:0;flex:1}
+  .s-name{font-family:'Newsreader',Georgia,serif;font-size:1.2rem;font-weight:500;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .s-sub{font-size:.82rem;color:var(--ink-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .s-row .pill{flex:none}
+  .s-body{padding:6px 16px 16px 40px;display:flex;flex-direction:column;gap:14px}
+  .s-body.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px 32px;align-items:start}
+  .s-body.two .c-foot{grid-column:1 / -1}
+  .s-main,.s-side{display:flex;flex-direction:column;gap:12px;min-width:0}
   .c-links{display:flex;gap:6px 18px;flex-wrap:wrap;font-size:.9rem;font-weight:500}
   .c-links a{text-decoration:none;overflow-wrap:anywhere}
   .c-links a:hover{text-decoration:underline}
@@ -90,13 +107,6 @@
   dl.dt{display:grid;grid-template-columns:8rem minmax(0,1fr);gap:6px 12px;font-size:.88rem}
   dl.dt dt{color:var(--ink-faint);font-weight:500}
   dl.dt dd{overflow-wrap:anywhere;white-space:pre-line}
-  .more summary{cursor:pointer;font-size:.85rem;font-weight:600;color:var(--accent);list-style:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .more summary::-webkit-details-marker{display:none}
-  .more summary::before{content:"▸ "}
-  .more[open] summary::before{content:"▾ "}
-  .more summary .keys{font-weight:400;color:var(--ink-faint)}
-  .more[open] summary .keys{display:none}
-  .more>*+*{margin-top:10px}
   .c-notes{font-size:.88rem;color:var(--ink-soft);white-space:pre-line;border-left:3px solid var(--line);padding-left:10px}
   .c-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.78rem;color:var(--ink-faint)}
   .empty{padding:30px 20px;text-align:center;color:var(--ink-soft)}
@@ -112,13 +122,14 @@
   .confirm{border:1px solid #e8d7b6;background:var(--brass-tint);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;font-size:.9rem}
 
   @media (max-width:900px){
-    .cards{grid-template-columns:minmax(0,1fr)}
+    .s-body.two{display:flex}
+    .s-body{padding-left:16px}
     .bar,.wrap{padding-inline:16px}
   }
   @media (max-width:560px){
-    .tools{width:100%}
-    .tools .i{width:auto;flex:1}
     .tabs{margin-left:4px}
+    .tools .btn{padding-inline:12px}
+    .i{font-size:16px} /* below 16px, iPhone zooms the page on focus */
     .grid2{grid-template-columns:minmax(0,1fr)}
     .kv{grid-template-columns:minmax(0,1fr) auto}
     .kv>:nth-child(2){grid-column:1 / -1;grid-row:2}
@@ -146,14 +157,13 @@
 
 <main class="wrap" id="app" hidden>
   <div class="top">
-    <div>
-      <h1>Sites</h1>
-      <p class="meta" id="count">Loading…</p>
-    </div>
-    <div class="tools">
-      <input class="i" id="q" type="search" placeholder="Search sites, clients, notes" aria-label="Search sites" autocomplete="off">
-      <button class="btn" id="add" type="button">Add a site</button>
-    </div>
+    <h1>Sites</h1>
+    <p class="meta"><span id="count">Loading…</span><button class="link" id="toggle-all" type="button" hidden>Open all</button></p>
+  </div>
+  <div class="tools">
+    <input class="i" id="q" type="search" placeholder="Search sites" aria-label="Search sites"
+      autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
+    <button class="btn" id="add" type="button">Add a site</button>
   </div>
   <p class="msg err" id="list-msg" role="alert"></p>
   <div id="groups"></div>
@@ -164,7 +174,6 @@
   var GROUPS = [["client", "Client sites"], ["business", "My businesses"], ["app", "Apps & tools"], ["property", "Properties"]];
   var STATUSES = [["live", "Live", "ok"], ["building", "Building", "warn"], ["paused", "Paused", "muted"], ["retired", "Retired", "muted"]];
   var DOTS = "••••••••••";
-  var WIDE = window.matchMedia("(min-width: 900px)");
   var $ = function (id) { return document.getElementById(id); };
 
   function el(tag, attrs, kids) {
@@ -195,7 +204,9 @@
   function showLogin() { $("login").hidden = false; $("app").hidden = true; $("signout").hidden = true; $("pw").focus(); }
   function showApp() { $("login").hidden = true; $("app").hidden = false; $("signout").hidden = false; }
 
-  var state = { sites: [], editing: null, query: "" };
+  // reopen: a site to show open after the next render (just saved or cancelled).
+  // autoId: a site the search opened by itself, closed again when the search moves on.
+  var state = { sites: [], editing: null, query: "", reopen: null, autoId: null };
 
   async function load() {
     var r = await api();
@@ -213,8 +224,9 @@
     return new Date(Date.UTC(p[0], p[1] - 1, p[2], 12)).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" });
   }
   function statusOf(s) { return STATUSES.find(function (x) { return x[0] === s; }) || STATUSES[0]; }
+  function groupOf(s) { return (GROUPS.find(function (g) { return g[0] === s.group; }) || GROUPS[0])[1]; }
   function haystack(s) {
-    return [s.name, s.url, s.admin, s.client, s.notes].concat(
+    return [s.name, s.url, s.admin, s.client, s.notes, statusOf(s.status)[1], groupOf(s)].concat(
       s.details.map(function (d) { return d.k + " " + d.v; }),
       s.secrets.map(function (x) { return x.label; })
     ).join(" ").toLowerCase();
@@ -248,57 +260,120 @@
   }
 
   /* ---------- list ---------- */
+  // Builds every row once; typing in the search only hides and shows them
+  // (filter()), so open rows and shown passwords stay as they are.
   function render() {
-    var q = state.query.trim().toLowerCase();
-    var shown = state.sites.filter(function (s) { return !q || haystack(s).indexOf(q) !== -1; });
-    var live = state.sites.filter(function (s) { return s.status === "live"; }).length;
-    $("count").textContent = state.sites.length + (state.sites.length === 1 ? " site" : " sites") + " · " + live + " live" + (q ? " · " + shown.length + " shown" : "");
+    var open = {};
+    document.querySelectorAll("details.site[open]").forEach(function (d) { open[d.dataset.id] = true; });
+    if (state.reopen) { open[state.reopen] = true; state.autoId = null; }
     var box = $("groups");
     box.textContent = "";
     if (state.editing === "new") {
-      box.appendChild(el("section", { class: "group" }, [el("h2", { text: "New site" }), el("div", { class: "cards" }, [editor(null)])]));
+      box.appendChild(el("section", { class: "group" }, [el("h2", { text: "New site" }), el("div", { class: "list" }, [editor(null)])]));
     }
     GROUPS.forEach(function (g) {
-      var list = shown.filter(function (s) { return s.group === g[0]; });
+      var list = state.sites.filter(function (s) { return s.group === g[0]; });
       if (!list.length) return;
       box.appendChild(el("section", { class: "group" }, [
         el("h2", { text: g[1] }),
-        el("div", { class: "cards" }, list.map(function (s) { return state.editing === s.id ? editor(s) : card(s); })),
+        el("div", { class: "list" }, list.map(function (s) { return state.editing === s.id ? editor(s) : row(s, open[s.id]); })),
       ]));
     });
-    if (!shown.length && state.editing !== "new") {
-      box.appendChild(el("div", { class: "panel empty", text: q ? "No site matches “" + state.query.trim() + "”." : "No sites yet. Add one above." }));
-    }
+    box.appendChild(el("p", { class: "panel empty", id: "none", hidden: true }));
+    filter();
+    var back = state.reopen && siteNode(state.reopen);
+    state.reopen = null;
+    if (back) back.scrollIntoView({ block: "nearest" });
   }
 
-  function card(s) {
+  function siteNode(id) {
+    return Array.prototype.find.call(document.querySelectorAll("details.site"), function (d) { return d.dataset.id === id; });
+  }
+
+  function filter() {
+    var terms = state.query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    var hits = [];
+    document.querySelectorAll("details.site").forEach(function (d) {
+      var hit = terms.every(function (t) { return d._hay.indexOf(t) !== -1; });
+      d.hidden = !hit;
+      if (hit) hits.push(d);
+    });
+    document.querySelectorAll("section.group").forEach(function (g) {
+      g.hidden = !g.querySelector("details.site:not([hidden]), form.editor");
+    });
+    // A search down to one site opens it, so its password is a tap away.
+    var only = terms.length && hits.length === 1 ? hits[0] : null;
+    if (state.autoId && (!only || only.dataset.id !== state.autoId)) {
+      var was = siteNode(state.autoId);
+      if (was) was.open = false;
+      state.autoId = null;
+    }
+    if (only && !only.open) { only.open = true; state.autoId = only.dataset.id; }
+
+    var live = state.sites.filter(function (s) { return s.status === "live"; }).length;
+    $("count").textContent = terms.length
+      ? hits.length + " of " + state.sites.length + " match"
+      : state.sites.length + (state.sites.length === 1 ? " site" : " sites") + " · " + live + " live";
+    var none = $("none");
+    none.hidden = !(terms.length ? !hits.length : !state.sites.length && state.editing !== "new");
+    none.textContent = terms.length ? "No site matches “" + state.query.trim() + "”." : "No sites yet. Add one above.";
+    syncToggle();
+  }
+
+  // "Open all" / "Close all" acts on the rows the search is showing.
+  function shownRows() { return Array.prototype.filter.call(document.querySelectorAll("details.site"), function (d) { return !d.hidden; }); }
+  function syncToggle() {
+    var rows = shownRows();
+    $("toggle-all").hidden = rows.length < 2;
+    $("toggle-all").textContent = rows.some(function (d) { return !d.open; }) ? "Open all" : "Close all";
+  }
+
+  function row(s, isOpen) {
     var st = statusOf(s.status);
     var rows = [];
     if (s.launched) rows.push(["Launched", day(s.launched)]);
     s.details.forEach(function (d) { rows.push([d.k, d.v]); });
-    return el("article", { class: "panel card" }, [
-      el("div", { class: "c-head" }, [el("h3", { text: s.name }), el("span", { class: "pill " + st[2], text: st[1] })]),
+    var who = (s.client || "").split("·")[0].trim();
+    var main = [
       s.url || s.admin ? el("div", { class: "c-links" }, [
         s.url ? el("a", { href: s.url, target: "_blank", rel: "noopener", text: host(s.url) + " ↗" }) : null,
         s.admin ? el("a", { href: s.admin, target: "_blank", rel: "noopener", text: "Admin ↗" }) : null,
       ]) : null,
       s.client ? el("p", { class: "c-client", text: s.client }) : null,
       s.secrets.length ? el("ul", { class: "secrets" }, s.secrets.map(function (x) { return secretRow(s, x); })) : null,
-      // Folded on phones so the list stays quick to scan; open on wider screens.
-      rows.length || s.notes ? el("details", { class: "more", open: WIDE.matches }, [
-        el("summary", {}, ["Details ", el("span", { class: "keys", text: rows.map(function (r) { return r[0]; }).concat(s.notes ? ["Notes"] : []).join(", ") })]),
-        rows.length ? el("dl", { class: "dt" }, rows.reduce(function (acc, r) {
-          acc.push(el("dt", { text: r[0] }));
-          acc.push(el("dd", {}, [/^https?:\/\/\S+$/.test(r[1]) ? el("a", { href: r[1], target: "_blank", rel: "noopener", text: r[1].replace(/^https?:\/\//, "") }) : r[1]]));
-          return acc;
-        }, [])) : null,
-        s.notes ? el("p", { class: "c-notes", text: s.notes }) : null,
-      ]) : null,
-      el("div", { class: "c-foot" }, [
-        el("span", { text: s.updated ? "Updated " + new Date(s.updated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "" }),
-        el("button", { class: "btn ghost small", type: "button", text: "Edit", onclick: function () { state.editing = s.id; render(); } }),
+    ].filter(Boolean);
+    var side = [
+      rows.length ? el("dl", { class: "dt" }, rows.reduce(function (acc, r) {
+        acc.push(el("dt", { text: r[0] }));
+        acc.push(el("dd", {}, [/^https?:\/\/\S+$/.test(r[1]) ? el("a", { href: r[1], target: "_blank", rel: "noopener", text: r[1].replace(/^https?:\/\//, "") }) : r[1]]));
+        return acc;
+      }, [])) : null,
+      s.notes ? el("p", { class: "c-notes", text: s.notes }) : null,
+    ].filter(Boolean);
+    var d = el("details", { class: "site", "data-id": s.id, open: isOpen }, [
+      el("summary", {}, [el("span", { class: "s-row" }, [
+        el("span", { class: "chev", "aria-hidden": "true" }),
+        el("span", { class: "s-title" }, [
+          el("span", { class: "s-name", text: s.name }),
+          el("span", { class: "s-sub", text: [s.url ? host(s.url) : "", who].filter(Boolean).join(" · ") }),
+        ]),
+        el("span", { class: "pill " + st[2], text: st[1] }),
+      ])]),
+      el("div", { class: "s-body" + (main.length && side.length ? " two" : "") }, [
+        main.length ? el("div", { class: "s-main" }, main) : null,
+        side.length ? el("div", { class: "s-side" }, side) : null,
+        el("div", { class: "c-foot" }, [
+          el("span", { text: s.updated ? "Updated " + new Date(s.updated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "" }),
+          el("button", { class: "btn ghost small", type: "button", text: "Edit", onclick: function () { state.editing = s.id; render(); } }),
+        ]),
       ]),
     ]);
+    d._hay = haystack(s);
+    d.addEventListener("toggle", function () {
+      if (!d.open && state.autoId === s.id) state.autoId = null;
+      syncToggle();
+    });
+    return d;
   }
 
   function secretRow(s, x) {
@@ -398,7 +473,7 @@
       msg,
       el("div", { class: "actions" }, [
         save,
-        el("button", { class: "link", type: "button", text: "Cancel", onclick: function () { state.editing = null; render(); } }),
+        el("button", { class: "link", type: "button", text: "Cancel", onclick: function () { state.editing = null; state.reopen = s.id || null; render(); } }),
         s.id ? el("button", { class: "link bad", type: "button", text: "Remove site", onclick: function () { confirmBox.hidden = false; } }) : null,
       ]),
       confirmBox,
@@ -425,6 +500,7 @@
       var i = state.sites.findIndex(function (x) { return x.id === r.data.site.id; });
       if (i === -1) state.sites.push(r.data.site); else state.sites[i] = r.data.site;
       state.editing = null;
+      state.reopen = r.data.site.id;
       render();
     });
     setTimeout(function () { if (!s.id) f.name.focus(); });
@@ -442,12 +518,36 @@
   });
   $("signout").addEventListener("click", async function () {
     await api(undefined, "DELETE");
-    state = { sites: [], editing: null, query: "" };
+    state = { sites: [], editing: null, query: "", reopen: null, autoId: null };
     $("groups").textContent = "";
+    $("q").value = "";
     showLogin();
   });
-  $("q").addEventListener("input", function () { state.query = $("q").value; render(); });
-  $("add").addEventListener("click", function () { state.editing = "new"; state.query = ""; $("q").value = ""; render(); window.scrollTo(0, 0); });
+
+  function search(text) { state.query = text; filter(); }
+  $("q").addEventListener("input", function () { search($("q").value); });
+  $("q").addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { $("q").value = ""; search(""); }
+    if (e.key === "Enter") { e.preventDefault(); $("q").blur(); } // hides the phone keyboard
+  });
+  // "/" jumps to the search from anywhere on the page.
+  document.addEventListener("keydown", function (e) {
+    var t = document.activeElement && document.activeElement.tagName;
+    if (e.key === "/" && !$("app").hidden && !/^(INPUT|TEXTAREA|SELECT)$/.test(t)) { e.preventDefault(); $("q").focus(); $("q").select(); }
+  });
+  $("toggle-all").addEventListener("click", function () {
+    var rows = shownRows();
+    var open = rows.some(function (d) { return !d.open; });
+    state.autoId = null;
+    rows.forEach(function (d) { d.open = open; });
+    syncToggle();
+  });
+  $("add").addEventListener("click", function () {
+    state.editing = "new";
+    $("q").value = ""; state.query = "";
+    render();
+    window.scrollTo(0, 0);
+  });
 
   load();
 })();
