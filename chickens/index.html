@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pasture-Raised Chicken</title>
+<meta name="description" content="Pasture-raised meat chickens fed organic, soy-free, corn-free feed. Whole birds at $5.50/lb. Send a note to reserve yours.">
+<link rel="canonical" href="https://schottky.com/chickens/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://schottky.com/chickens/">
+<meta property="og:title" content="Pasture-raised chicken, $5.50/lb">
+<meta property="og:description" content="Raised outdoors on grass. Organic, soy-free, corn-free feed. Whole birds, reserve yours with a quick note.">
+<meta property="og:image" content="https://schottky.com/chickens/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Pasture-raised chicken, $5.50/lb">
+<meta name="twitter:description" content="Raised outdoors on grass. Organic, soy-free, corn-free feed. Whole birds, reserve yours with a quick note.">
+<meta name="twitter:image" content="https://schottky.com/chickens/og-image.jpg">
+<meta name="theme-color" content="#2f5a3a">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="preload" as="image" href="birds.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f7f3ea; --surface:#fffdf8; --surface-2:#efe8d9; --border:#e1d8c5;
+  --text:#1f2a1f; --text-2:#4d574b; --text-3:#7a8276;
+  --green:#2f5a3a; --green-ink:#ffffff; --gold:#c98a1b; --sky:#e9efe4; --hill1:#9fbf86; --hill2:#6f9a5c; --hill3:#2f5a3a;
+  --bad:#b53a2c;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#141713; --surface:#1c201b; --surface-2:#262b24; --border:#343b31;
+    --text:#f2f0e8; --text-2:#c4c8bb; --text-3:#8d9386;
+    --green:#7fb38a; --green-ink:#10140f; --gold:#e0a63c; --sky:#1b2219; --hill1:#3c5a33; --hill2:#2e4a29; --hill3:#20361f;
+    --bad:#e8786a;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#141713; --surface:#1c201b; --surface-2:#262b24; --border:#343b31;
+  --text:#f2f0e8; --text-2:#c4c8bb; --text-3:#8d9386;
+  --green:#7fb38a; --green-ink:#10140f; --gold:#e0a63c; --sky:#1b2219; --hill1:#3c5a33; --hill2:#2e4a29; --hill3:#20361f;
+  --bad:#e8786a;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:17px/1.6 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+h1,h2,h3{font-family:Newsreader,Georgia,serif;font-weight:600;letter-spacing:-.01em;line-height:1.12;margin:0}
+a{color:var(--green)}
+.btn{display:inline-block;background:var(--green);color:var(--green-ink);text-decoration:none;font-weight:600;padding:14px 26px;border-radius:999px;border:0;font:inherit;font-weight:600;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+
+/* Hero */
+.hero{background:var(--sky);position:relative;overflow:hidden}
+.hero-inner{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center;padding:72px 16px 150px;max-width:1040px;margin:0 auto;position:relative;z-index:1}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-2);margin:0 0 14px}
+.hero h1{font-size:clamp(40px,6vw,64px)}
+.hero h1 em{font-style:italic;color:var(--green)}
+.lede{font-size:19px;color:var(--text-2);max-width:520px;margin:18px 0 28px}
+.photo{margin:0;position:relative}
+.photo img{display:block;width:100%;height:auto;aspect-ratio:3/4;object-fit:cover;border-radius:24px;box-shadow:0 14px 40px rgba(31,42,31,.18)}
+.price-card{position:absolute;left:-28px;bottom:32px;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px 24px;box-shadow:0 10px 30px rgba(31,42,31,.16)}
+.price{font-family:Newsreader,Georgia,serif;font-size:56px;font-weight:600;line-height:1;color:var(--green)}
+.price small{font-size:22px;color:var(--text-2);font-weight:500}
+.price-note{color:var(--text-2);margin:6px 0 0;font-size:14px}
+.hills{position:absolute;left:0;right:0;bottom:-1px;width:100%;height:170px;display:block}
+
+/* Pillars */
+section{padding:80px 0}
+.section-head{max-width:640px;margin:0 0 40px}
+.section-head h2{font-size:clamp(30px,4vw,42px)}
+.section-head p{color:var(--text-2);margin:12px 0 0}
+.pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.pillar{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px}
+.pillar svg{width:40px;height:40px;color:var(--green);margin-bottom:14px}
+.pillar h3{font-size:22px;margin-bottom:8px}
+.pillar p{margin:0;color:var(--text-2);font-size:15px}
+
+/* How it works */
+.how{background:var(--surface-2)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;counter-reset:step}
+.step{counter-increment:step}
+.step::before{content:counter(step);display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--green);color:var(--green-ink);font-family:Newsreader,Georgia,serif;font-size:22px;font-weight:600;margin-bottom:14px}
+.step h3{font-size:22px;margin-bottom:6px}
+.step p{margin:0;color:var(--text-2);font-size:16px}
+.math{margin-top:40px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px 24px;display:flex;flex-wrap:wrap;gap:8px 32px;align-items:baseline}
+.math strong{font-family:Newsreader,Georgia,serif;font-size:22px;font-weight:600}
+.math span{color:var(--text-2);font-size:15px}
+
+/* Form */
+.order{display:grid;grid-template-columns:.9fr 1.1fr;gap:48px;align-items:start}
+.order-copy p{color:var(--text-2)}
+form{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;display:grid;gap:16px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+label{display:block;font-size:14px;font-weight:600;margin-bottom:6px}
+label .opt{font-weight:400;color:var(--text-3)}
+input,select,textarea{width:100%;font:inherit;font-size:16px;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--green);outline-offset:1px;border-color:transparent}
+textarea{min-height:110px;resize:vertical}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.form-status{margin:0;font-size:15px;min-height:1.4em}
+.form-status.error{color:var(--bad)}
+.thanks{text-align:center;padding:24px 8px}
+.thanks h3{font-size:28px;margin-bottom:8px}
+.thanks p{color:var(--text-2);margin:0}
+
+footer{border-top:1px solid var(--border);padding:28px 0 40px;color:var(--text-3);font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+@media (max-width:860px){
+  .hero-inner{grid-template-columns:1fr;padding:48px 16px 130px}
+  .photo{max-width:440px}
+  .price-card{left:16px;bottom:16px}
+  .pillars{grid-template-columns:1fr 1fr}
+  .steps{grid-template-columns:1fr}
+  .order{grid-template-columns:1fr;gap:28px}
+}
+@media (max-width:520px){
+  .pillars{grid-template-columns:1fr}
+  .row{grid-template-columns:1fr}
+  section{padding:56px 0}
+  .price{font-size:44px}
+}
+</style>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-896FL0DLQD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-896FL0DLQD');
+</script>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div>
+      <p class="eyebrow">Pasture-raised meat chickens</p>
+      <h1>Chicken the way it <em>used to taste.</em></h1>
+      <p class="lede">Our birds live outside on fresh grass and eat organic feed with no soy and no corn. Raised in small batches and sold whole, straight from our farm to your freezer.</p>
+      <a class="btn" href="#order">Reserve your birds</a>
+    </div>
+    <figure class="photo">
+      <img src="birds.jpg" width="900" height="1200" alt="Our meat chickens out on the grass, eating from two feed troughs">
+      <div class="price-card" aria-label="Price">
+        <div class="price">$5.50<small>/lb</small></div>
+        <p class="price-note">Whole birds, priced by weight</p>
+      </div>
+    </figure>
+  </div>
+  <svg class="hills" viewBox="0 0 1440 170" preserveAspectRatio="none" aria-hidden="true">
+    <path fill="var(--hill1)" d="M0 90 C 200 40, 380 40, 560 80 S 900 130, 1100 70 S 1340 40, 1440 60 V170 H0Z"/>
+    <path fill="var(--hill2)" d="M0 120 C 240 80, 420 100, 640 125 S 1000 150, 1200 110 S 1380 95, 1440 105 V170 H0Z"/>
+    <path fill="var(--bg)" d="M0 150 C 300 135, 600 160, 900 150 S 1300 140, 1440 150 V170 H0Z"/>
+  </svg>
+</header>
+
+<main>
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <h2>What goes into every bird</h2>
+        <p>Short list on purpose. You can taste the difference in the meat, and see it in the broth.</p>
+      </div>
+      <div class="pillars">
+        <div class="pillar">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 32c6-4 10-4 16 0s10 4 16 0"/><path d="M10 28V18M10 18c0-4 3-7 6-8M10 18c0-4-3-6-6-6M20 28V12M20 12c0-4 3-7 6-7M30 28V17M30 17c0-4 3-6 6-6"/></svg>
+          <h3>Pasture-raised</h3>
+          <p>Raised outside on grass, with sunshine, bugs and room to roam.</p>
+        </div>
+        <div class="pillar">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 35V14"/><path d="M20 14c0-6 5-10 12-10 0 7-5 11-12 10Z"/><path d="M20 22c0-5-4-9-11-9 0 6 4 10 11 9Z"/></svg>
+          <h3>Organic feed</h3>
+          <p>An organic ration on top of everything they forage.</p>
+        </div>
+        <div class="pillar">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="20" cy="20" r="14"/><path d="M10 10l20 20"/><ellipse cx="17" cy="19" rx="3" ry="4.5"/><ellipse cx="24" cy="22" rx="3" ry="4.5"/></svg>
+          <h3>No soy</h3>
+          <p>Soy-free feed, for families avoiding soy or just wanting a cleaner bird.</p>
+        </div>
+        <div class="pillar">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="20" cy="20" r="14"/><path d="M10 10l20 20"/><path d="M20 9c3 3 4 7 4 11s-1 8-4 11c-3-3-4-7-4-11s1-8 4-11Z"/></svg>
+          <h3>No corn</h3>
+          <p>Corn-free too. Most chicken, even "natural" chicken, is built on corn and soy.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="how">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>How ordering works</h2>
+        <p>No website checkout, no subscription. Just a quick note.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <h3>Send a note</h3>
+          <p>Tell us how many birds you'd like using the form below.</p>
+        </div>
+        <div class="step">
+          <h3>We confirm</h3>
+          <p>We'll reply with what's available and set up a time to get your birds to you.</p>
+        </div>
+        <div class="step">
+          <h3>Pay by weight</h3>
+          <p>Each bird is weighed and priced at $5.50 per pound. You pay when you get them.</p>
+        </div>
+      </div>
+      <div class="math">
+        <strong>A typical bird: about 5 lb, around $27.50</strong>
+        <span>Birds usually dress out between 4 and 6 lb.</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="order">
+    <div class="wrap order">
+      <div class="order-copy">
+        <div class="section-head" style="margin-bottom:16px">
+          <h2>Reserve your chickens</h2>
+        </div>
+        <p>Batches are small and tend to go fast. Send a note and we'll get back to you, usually within a day.</p>
+        <p>Rather email? Write to <a href="mailto:alex@schottky.com?subject=Chickens">alex@schottky.com</a>.</p>
+      </div>
+
+      <form id="order-form" novalidate>
+        <div class="row">
+          <div>
+            <label for="f-name">Name</label>
+            <input id="f-name" name="name" autocomplete="name" required>
+          </div>
+          <div>
+            <label for="f-email">Email</label>
+            <input id="f-email" name="email" type="email" autocomplete="email" required>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="f-phone">Phone <span class="opt">(optional)</span></label>
+            <input id="f-phone" name="phone" type="tel" autocomplete="tel">
+          </div>
+          <div>
+            <label for="f-birds">How many birds?</label>
+            <select id="f-birds" name="birds">
+              <option>1</option>
+              <option selected>2</option>
+              <option>3–5</option>
+              <option>6–10</option>
+              <option>More than 10</option>
+              <option>Not sure yet</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label for="f-message">Anything else? <span class="opt">(optional)</span></label>
+          <textarea id="f-message" name="message" placeholder="Timing, questions, anything we should know…"></textarea>
+        </div>
+        <div class="hp" aria-hidden="true">
+          <label for="f-website">Website</label>
+          <input id="f-website" name="website" tabindex="-1" autocomplete="off">
+        </div>
+        <div>
+          <button class="btn" type="submit">Send my order note</button>
+        </div>
+        <p class="form-status" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Pasture-raised chicken · $5.50/lb</span>
+    <a href="mailto:alex@schottky.com?subject=Chickens">alex@schottky.com</a>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const form = document.getElementById("order-form");
+  const status = form.querySelector(".form-status");
+  const button = form.querySelector("button");
+  const shownAt = Date.now();
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    status.className = "form-status";
+    const data = Object.fromEntries(new FormData(form));
+    if (!data.name.trim()) return fail("Please add your name.", "f-name");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) return fail("Please check your email address.", "f-email");
+
+    button.disabled = true;
+    button.textContent = "Sending…";
+    try {
+      const res = await fetch("/api/chickens", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, t: shownAt }),
+      });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(out.error || "Sorry, that didn't send. Please email alex@schottky.com instead.");
+      if (window.gtag) gtag("event", "generate_lead", { form: "chickens" });
+      form.innerHTML = `<div class="thanks"><h3>Thank you!</h3><p>Your note is on its way. We'll reply to <strong></strong> soon, usually within a day.</p></div>`;
+      form.querySelector("strong").textContent = data.email.trim();
+    } catch (err) {
+      fail(err.message);
+      button.disabled = false;
+      button.textContent = "Send my order note";
+    }
+  });
+
+  function fail(msg, focusId) {
+    status.textContent = msg;
+    status.className = "form-status error";
+    if (focusId) document.getElementById(focusId).focus();
+  }
+})();
+</script>
+</body>
+</html>

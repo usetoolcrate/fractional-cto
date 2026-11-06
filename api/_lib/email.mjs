@@ -21,10 +21,10 @@ async function resend(payload, idempotencyKey) {
   return data.id;
 }
 
-export async function sendEmail({ to, subject, text, html, idempotencyKey, bcc: copyMe = true }) {
-  const from = process.env.EMAIL_FROM || "Alexander Schottky <alex@schottky.com>";
+export async function sendEmail({ to, subject, text, html, idempotencyKey, replyTo, from: sender, bcc: copyMe = true }) {
+  const from = sender || process.env.EMAIL_FROM || "Alexander Schottky <alex@schottky.com>";
   const id = await resend(
-    { from, to: [to], subject, text, html, reply_to: process.env.EMAIL_REPLY_TO || "alex@schottky.com" },
+    { from, to: [to], subject, text, html, reply_to: replyTo || process.env.EMAIL_REPLY_TO || "alex@schottky.com" },
     idempotencyKey,
   );
 
