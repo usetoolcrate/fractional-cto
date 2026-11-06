@@ -1,0 +1,35 @@
+{
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.schottkyfarm.com" }],
+      "destination": "https://schottkyfarm.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/((?!chickens/|api/chickens$).+)",
+      "has": [{ "type": "host", "value": "schottkyfarm.com" }],
+      "destination": "https://schottkyfarm.com/",
+      "permanent": false
+    },
+    {
+      "source": "/chickens/?",
+      "has": [{ "type": "host", "value": "schottky.com" }],
+      "destination": "https://schottkyfarm.com/",
+      "permanent": true
+    },
+    {
+      "source": "/chickens/?",
+      "has": [{ "type": "host", "value": "www.schottky.com" }],
+      "destination": "https://schottkyfarm.com/",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "schottkyfarm.com" }],
+      "destination": "/chickens/index.html"
+    }
+  ]
+}

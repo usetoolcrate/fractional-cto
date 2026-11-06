@@ -1,7 +1,7 @@
 import { sendEmail } from "./_lib/email.mjs";
 import { json } from "./_lib/session.mjs";
 
-// POST { name, email, phone, birds, message, website, t } from schottky.com/chickens.
+// POST { name, email, phone, birds, message, website, t } from schottkyfarm.com.
 // Emails the order inquiry to me with reply-to set to the buyer, so hitting
 // Reply answers them. `website` is a hidden honeypot and `t` is when the form
 // was shown; bots fill the first and submit instantly, so both are dropped
@@ -37,7 +37,7 @@ export async function POST(request) {
     ["How many birds", birds || "—"],
   ];
   const text = [
-    "New chicken inquiry from schottky.com/chickens",
+    "New chicken inquiry from schottkyfarm.com",
     "",
     ...rows.map(([k, v]) => `${k}: ${v}`),
     "",
@@ -47,7 +47,7 @@ export async function POST(request) {
   ].join("\n");
   const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#faf8f4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;color:#1c1e21;font-size:16px;line-height:1.6">
 <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e2dcd0;border-radius:10px;padding:28px">
-<p style="margin:0 0 16px;font-weight:700">New chicken inquiry from schottky.com/chickens</p>
+<p style="margin:0 0 16px;font-weight:700">New chicken inquiry from schottkyfarm.com</p>
 <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 16px">
 ${rows.map(([k, v]) => `<tr><td style="padding:8px 12px 8px 0;border-top:1px solid #e2dcd0;color:#4a4f56;white-space:nowrap">${esc(k)}</td><td style="padding:8px 0;border-top:1px solid #e2dcd0">${esc(v)}</td></tr>`).join("\n")}
 </table>
