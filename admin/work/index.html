@@ -146,6 +146,7 @@
 
   /* Projects mode */
   .flip-tools{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap;margin-top:18px}
+  .flip-tools .jump{flex:1;min-width:160px;max-width:300px;padding:6px 10px;font-size:.9rem}
   .flip-nav{display:flex;gap:8px;align-items:center;margin-left:auto}
   .flip-nav .pos{font-variant-numeric:tabular-nums;color:var(--ink-soft);font-size:.88rem;min-width:4.5em;text-align:center}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-top:14px;padding:22px 24px 24px;box-shadow:0 1px 3px rgba(28,30,33,.06);min-width:0}
@@ -406,7 +407,7 @@
     data: null, status: "active", query: "", log: "",
     mode: location.hash === "#projects" ? "projects" : "overview",
     // Projects mode: which card, which filter, and per project the draft, the pending ask, Claude's proposal or its error.
-    flip: { status: "active", index: 0, drafts: {}, busy: {}, proposals: {}, errors: {}, recent: {} },
+    flip: { status: "active", index: 0, query: "", drafts: {}, busy: {}, proposals: {}, errors: {}, recent: {} },
   };
 
   function stale(p) { var n = daysFrom(p.touched); return p.status === "active" && n !== null && -n > STALE_DAYS; }
@@ -495,9 +496,10 @@
     try { localStorage.setItem(HIDE_KEY, JSON.stringify(h)); } catch (e) {}
   }
   function deadlineKey(p) { var m = /(\d{4}-\d{2}-\d{2})/.exec(p.deadline || ""); return m ? m[1] : "9999-99-99"; }
+  function matches(p, q) { return [p.id, p.name, p.type, p.status].join(" ").toLowerCase().indexOf(q) !== -1; }
   function flipRows() {
-    var f = state.flip;
-    var rows = state.data.projects.filter(function (p) { return f.status === "all" || p.status === f.status; });
+    var f = state.flip, q = f.query.trim().toLowerCase();
+    var rows = state.data.projects.filter(function (p) { return q ? matches(p, q) : f.status === "all" || p.status === f.status; });
     rows.sort(function (a, b) {
       var s = ORDER.indexOf(a.status) - ORDER.indexOf(b.status);
       if (s) return s;
@@ -634,12 +636,23 @@
       }));
     });
     var move = function (d) { if (!rows.length) return; f.index = (f.index + d + rows.length) % rows.length; renderFlip(); window.scrollTo(0, 0); };
-    view.appendChild(el("div", { class: "flip-tools" }, [chips, el("div", { class: "flip-nav" }, [
+    var names = state.data.projects.slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
+    var search = el("input", {
+      class: "i jump", id: "jump", type: "search", list: "jump-list", placeholder: "Jump to a project (press /)", "aria-label": "Jump to a project", value: f.query,
+      autocomplete: "off", autocapitalize: "off", spellcheck: "false",
+      oninput: function () { f.query = this.value; f.index = 0; renderFlip(); },
+      onkeydown: function (e) {
+        if (e.key === "Escape") { this.value = ""; f.query = ""; f.index = 0; renderFlip(); }
+        else if (e.key === "Enter") { e.preventDefault(); this.blur(); }
+      },
+    });
+    var list = el("datalist", { id: "jump-list" }, names.map(function (p) { return el("option", { value: p.name }); }));
+    view.appendChild(el("div", { class: "flip-tools" }, [chips, search, list, el("div", { class: "flip-nav" }, [
       el("button", { class: "btn ghost small", type: "button", text: "← Prev", "aria-label": "Previous project", disabled: rows.length < 2 ? true : null, onclick: function () { move(-1); } }),
       el("span", { class: "pos", text: rows.length ? (f.index + 1) + " / " + rows.length : "0 / 0" }),
       el("button", { class: "btn ghost small", type: "button", text: "Next →", "aria-label": "Next project", disabled: rows.length < 2 ? true : null, onclick: function () { move(1); } }),
     ])]));
-    if (!rows.length) view.appendChild(el("div", { class: "panel empty", text: "No projects with that status." }));
+    if (!rows.length) view.appendChild(el("div", { class: "panel empty", text: f.query.trim() ? "No project matches that." : "No projects with that status." }));
     else view.appendChild(projectCard(rows[f.index]));
     if (focused) { var again = $(focused); if (again) { again.focus(); if (again.setSelectionRange && again.value) again.setSelectionRange(again.value.length, again.value.length); } }
     window.scrollTo(0, y);
@@ -872,6 +885,7 @@
     if (state.mode !== "projects" || !state.data || e.metaKey || e.ctrlKey || e.altKey) return;
     var t = e.target, tag = t && t.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
+    if (e.key === "/") { var j = $("jump"); if (j) { e.preventDefault(); j.focus(); j.select(); } return; }
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
     var rows = flipRows();
     if (rows.length < 2) return;
