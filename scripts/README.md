@@ -78,3 +78,13 @@ Each site can carry an Analytics property ID, a Search Console property and a Cl
 There is no Google key anywhere. Google Cloud project `schottky-site-stats` (owner alexschottky@gmail.com) has a Workload Identity Federation pool `vercel` with provider `fractional-cto`, which trusts Vercel's OIDC tokens (issuer `https://oidc.vercel.com/aschottkys-projects`) only for this project. The token is exchanged for one of the read-only service account `site-stats@schottky-site-stats.iam.gserviceaccount.com` (`api/_lib/google.mjs`).
 
 To add a site's stats: in Analytics, add that service account as a **Viewer** on the property (Admin → Property access management, notification email off); in Search Console, add it as a **Restricted** user (Settings → Users and permissions). Then put the IDs on the site.
+
+## Work view (schottky.com/admin/work)
+
+What is in flight, what is next, and what got done, behind the same admin sign-in. Read-only: the page shows the task hub, it never changes it.
+
+- The hub is the private repo `aschottky/hub` (markdown: `NOW.md`, `LOG.md`, `INBOX.md`, `projects/*.md`). Claude keeps it current; corrections go through a hub session (`@project` and what to change), not this page.
+- `api/admin/work.mjs` reads it through the GitHub API (`api/_lib/hub.mjs`) and caches the result for a minute. The Refresh button skips the cache.
+- It needs `HUB_GITHUB_TOKEN` in Vercel (Production and Preview, sensitive): a fine-grained GitHub token limited to the `aschottky/hub` repo with **Contents: Read-only** and nothing else. Until it is set, the page says the hub isn't connected.
+- Optional: `HUB_REPO` (default `aschottky/hub`) and `HUB_BRANCH` (default `main`).
+- This repo is public, so nothing from the hub is committed here. It is fetched at request time and only sent to a signed-in admin.
