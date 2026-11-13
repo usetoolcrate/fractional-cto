@@ -13,27 +13,50 @@ const BRANCH = () => process.env.HUB_BRANCH?.trim() || "main";
 const CACHE_MS = 60 * 1000;
 let cache = null; // { at, data } — per warm function instance
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// GitHub answers the odd 502 or drops a connection; a read is retried twice
+// before the page gives up. Writes are not retried here: commitFiles handles
+// its own conflicts, and a retried POST could create a blob or commit twice.
 async function gh(path, { raw = false, method = "GET", body } = {}) {
   const token = process.env.HUB_GITHUB_TOKEN?.trim();
   if (!token) throw new Error("HUB_GITHUB_TOKEN is not set");
   const url = `https://api.github.com/repos/${REPO()}/${path}`;
-  const r = await fetch(url, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: raw ? "application/vnd.github.raw" : "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      "User-Agent": "schottky-admin-work",
-      ...(body ? { "Content-Type": "application/json" } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!r.ok) {
+  const retries = method === "GET" ? 2 : 0;
+  for (let attempt = 0; ; attempt++) {
+    let r;
+    try {
+      r = await fetch(url, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: raw ? "application/vnd.github.raw" : "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+          "User-Agent": "schottky-admin-work",
+          ...(body ? { "Content-Type": "application/json" } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    } catch (err) {
+      if (attempt < retries) { await sleep(300 * (attempt + 1)); continue; }
+      throw new Error(`GitHub unreachable on ${path.split("?")[0]}`);
+    }
+    if (r.ok) return raw ? r.text() : r.json();
+    if (r.status >= 500 && attempt < retries) { await sleep(300 * (attempt + 1)); continue; }
     const err = new Error(`GitHub ${r.status} on ${path.split("?")[0]}`);
     err.status = r.status;
     throw err;
   }
-  return raw ? r.text() : r.json();
+}
+
+// Run jobs a few at a time: 30 project files at once is what drew the 502s.
+async function batched(items, limit, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) { const i = next++; out[i] = await fn(items[i]); }
+  }));
+  return out;
 }
 
 const file = (name, ref = BRANCH()) => gh(`contents/${name}?ref=${encodeURIComponent(ref)}`, { raw: true });
@@ -55,7 +78,7 @@ export async function loadHub({ fresh = false } = {}) {
   const names = (Array.isArray(listing) ? listing : [])
     .filter((f) => f.type === "file" && f.name.endsWith(".md") && !f.name.startsWith("_"))
     .map((f) => f.name);
-  const projects = await Promise.all(names.map(async (name) => ({ name, text: await file(`projects/${name}`) })));
+  const projects = await batched(names, 6, async (name) => ({ name, text: await file(`projects/${name}`) }));
   const data = parseHub({ now, log, inbox, projects });
   data.repo = REPO();
   data.commit = commits[0]
