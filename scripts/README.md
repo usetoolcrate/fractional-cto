@@ -81,10 +81,11 @@ To add a site's stats: in Analytics, add that service account as a **Viewer** on
 
 ## Work view (schottky.com/admin/work)
 
-What is in flight, what is next, and what got done, behind the same admin sign-in. Read-only: the page shows the task hub, it never changes it.
+What is in flight, what is next, and what got done, behind the same admin sign-in. The page shows the task hub and can tick things off in it; anything bigger than "done" goes through a hub session.
 
 - The hub is the private repo `aschottky/hub` (markdown: `NOW.md`, `LOG.md`, `INBOX.md`, `projects/*.md`). Claude keeps it current; corrections go through a hub session (`@project` and what to change), not this page.
 - `api/admin/work.mjs` reads it through the GitHub API (`api/_lib/hub.mjs`) and caches the result for a minute. The Refresh button skips the cache.
-- It needs `HUB_GITHUB_TOKEN` in Vercel (Production and Preview, sensitive): a fine-grained GitHub token limited to the `aschottky/hub` repo with **Contents: Read-only** and nothing else. Until it is set, the page says the hub isn't connected.
+- It needs `HUB_GITHUB_TOKEN` in Vercel (Production, sensitive): a fine-grained GitHub token limited to the `aschottky/hub` repo with **Contents: Read and write** and nothing else. Until it is set, the page says the hub isn't connected; with a read-only token the page loads but Done says the token can't write.
+- Done on the current task logs it and moves the first queue item up. Done on a queue item removes and logs it. Ticking a task in a project or in "This week" checks it off (untick to reopen). Each is one commit to the hub (`api/_lib/hub-write.mjs`) with a `LOG.md` line marked "(via admin)". If the hub changed since the page loaded, the edit is refused and the page reloads.
 - Optional: `HUB_REPO` (default `aschottky/hub`) and `HUB_BRANCH` (default `main`).
 - This repo is public, so nothing from the hub is committed here. It is fetched at request time and only sent to a signed-in admin.

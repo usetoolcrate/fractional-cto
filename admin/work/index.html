@@ -77,6 +77,9 @@
   .now{border:1px solid var(--accent);border-left-width:5px;background:var(--card);border-radius:10px;padding:18px 20px;margin-top:18px;display:flex;flex-direction:column;gap:8px}
   .now .k{font-size:.7rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
   .now p{font-size:1.08rem;overflow-wrap:anywhere}
+  .now .act{display:flex;gap:10px;align-items:center;margin-top:4px}
+  .btn.sure{background:var(--brass)}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:.88rem;padding:9px 16px;border-radius:999px;z-index:9;box-shadow:0 4px 14px rgba(28,30,33,.25)}
   .note{margin-top:12px;font-size:.9rem;color:var(--ink-soft);border-left:3px solid var(--brass);background:var(--brass-tint);border-radius:0 8px 8px 0;padding:10px 14px}
   .note p+p{margin-top:6px}
 
@@ -91,14 +94,17 @@
   .idle{padding:14px 18px;color:var(--ink-soft);font-size:.9rem}
 
   ol.queue{list-style:none;counter-reset:q}
-  ol.queue li{counter-increment:q;display:grid;grid-template-columns:28px minmax(0,1fr);gap:0 8px;padding:10px 16px;border-top:1px solid var(--line);font-size:.92rem;overflow-wrap:anywhere}
+  ol.queue li{counter-increment:q;display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:start;gap:0 8px;padding:10px 16px;border-top:1px solid var(--line);font-size:.92rem;overflow-wrap:anywhere}
   ol.queue li:first-child{border-top:0}
   ol.queue li::before{content:counter(q);font-family:'Newsreader',Georgia,serif;font-size:1.15rem;color:var(--ink-faint);line-height:1.3}
   ul.checks{list-style:none}
-  ul.checks li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:0 6px;padding:5px 0;font-size:.92rem;overflow-wrap:anywhere}
-  ul.checks li::before{content:"";width:13px;height:13px;margin-top:5px;border:1.5px solid var(--ink-faint);border-radius:3px}
-  ul.checks li.done{color:var(--ink-faint);text-decoration:line-through}
-  ul.checks li.done::before{background:var(--accent);border-color:var(--accent)}
+  ul.checks li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:0 6px;padding:5px 0;font-size:.92rem;overflow-wrap:anywhere}
+  .box{width:16px;height:16px;margin-top:4px;border:1.5px solid var(--ink-faint);border-radius:4px;background:var(--card);cursor:pointer;padding:0;display:grid;place-items:center}
+  .box:hover{border-color:var(--accent)}
+  .box:disabled{cursor:default;opacity:.5}
+  .box[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
+  .box[aria-checked="true"]::after{content:"";width:8px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+  ul.checks li.done span{color:var(--ink-faint);text-decoration:line-through}
   ul.plain{list-style:none}
   ul.plain li{padding:4px 0 4px 14px;position:relative;font-size:.9rem;overflow-wrap:anywhere}
   ul.plain li::before{content:"";position:absolute;left:0;top:.8em;width:5px;height:5px;border-radius:50%;background:var(--ink-faint)}
@@ -259,13 +265,39 @@
       el("tbody", {}, body),
     ])]);
   }
-  function checks(items) {
-    return el("ul", { class: "checks" }, items.map(function (t) { return el("li", { class: t.done ? "done" : "" }, [el("span", {}, [rich(t.text)])]); }));
+  // project: the file the checklist lives in ("" = NOW.md). Ticking saves straight to the hub.
+  function checks(items, project) {
+    return el("ul", { class: "checks" }, items.map(function (t) {
+      return el("li", { class: t.done ? "done" : "" }, [
+        el("button", {
+          class: "box", type: "button", role: "checkbox", "aria-checked": String(t.done), "aria-label": (t.done ? "Reopen: " : "Mark done: ") + t.text,
+          onclick: function (e) { e.preventDefault(); save({ action: "task", project: project || "", text: t.text, done: !t.done }, this); },
+        }),
+        el("span", {}, [rich(t.text)]),
+      ]);
+    }));
+  }
+  // A button that asks once more before it saves: the first click arms it, the second does it.
+  function confirmBtn(label, cls, go) {
+    var armed = null;
+    var b = el("button", { class: cls, type: "button", text: label, onclick: function () {
+      if (!armed) {
+        b.textContent = "Confirm done"; b.classList.add("sure");
+        armed = setTimeout(function () { armed = null; b.textContent = label; b.classList.remove("sure"); }, 4000);
+        return;
+      }
+      clearTimeout(armed);
+      go(b);
+    } });
+    return b;
   }
   function block(b, opts) {
     if (b.type === "p") return el("p", {}, [rich(b.text)]);
     if (b.type === "table") return table(b, opts);
-    if (b.type === "tasks") return checks(b.items);
+    if (b.type === "tasks") return checks(b.items, "");
+    if (b.type === "ol" && opts && opts.queue) return el("ol", { class: "queue" }, b.items.map(function (t, i) {
+      return el("li", {}, [el("span", {}, [rich(t)]), confirmBtn("Done", "btn ghost small", function (btn) { save({ action: "done-queue", index: i, text: t }, btn); })]);
+    }));
     if (b.type === "ol") return el("ol", { class: "queue" }, b.items.map(function (t) { return el("li", {}, [el("span", {}, [rich(t)])]); }));
     if (b.type === "ul") return el("ul", { class: "plain" }, b.items.map(function (t) { return el("li", {}, [rich(t)]); }));
     if (b.type === "code") return el("pre", {}, [el("code", { text: b.text })]);
@@ -303,13 +335,13 @@
     facts.forEach(function (f) { if (f[1]) { dl.appendChild(el("dt", { text: f[0] })); dl.appendChild(el("dd", {}, [rich(f[1])])); } });
     d.appendChild(el("div", { class: "p-body" }, [
       el("div", { class: "stack" }, [
-        p.tasks.length ? el("div", {}, [el("h3", { text: "Tasks" }), checks(p.tasks)]) : el("p", { class: "p-id", text: "No tasks listed." }),
+        p.tasks.length ? el("div", {}, [el("h3", { text: "Tasks" }), checks(p.tasks, p.id)]) : el("p", { class: "p-id", text: "No tasks listed." }),
         p.waiting.length ? el("div", {}, [el("h3", { text: "Waiting on" }), el("ul", { class: "plain" }, p.waiting.map(function (t) { return el("li", {}, [rich(t)]); }))]) : null,
       ]),
       el("div", { class: "stack" }, [
         dl,
         p.notes.length ? el("div", {}, [el("h3", { text: "Notes" }), el("ul", { class: "plain" }, p.notes.map(function (t) { return el("li", {}, [rich(t)]); }))]) : null,
-        el("p", { class: "fix" }, ["To correct this, tell the hub session: ", el("code", { text: "@" + p.id }), " and what to change."]),
+        el("p", { class: "fix" }, ["Tick a task to mark it done. For anything else, tell the hub session: ", el("code", { text: "@" + p.id }), " and what to change."]),
       ]),
     ]));
     return d;
@@ -393,13 +425,20 @@
   /* ---------- page ---------- */
   function render() {
     var d = state.data, secs = d.now.sections, view = $("view");
+    var open = Array.prototype.map.call(document.querySelectorAll("details.proj[open]"), function (x) { return x.getAttribute("data-id"); });
     var used = [];
     var take = function (re) { var s = pick(secs, re); if (s) used.push(s); return s; };
     view.textContent = "";
 
     var current = take(/^current task/i);
+    var curText = current ? current.blocks.map(function (b) { return b.text || ""; }).join(" ") : "";
+    var hasTask = curText && !/^nothing (queued|set)/i.test(curText);
     view.appendChild(el("div", { class: "now" }, [el("span", { class: "k", text: "Current task" })].concat(
-      current && current.blocks.length ? current.blocks.map(function (b) { return block(b); }) : [el("p", { text: "Nothing set. Say \"what's next?\" in the hub session." })]
+      current && current.blocks.length ? current.blocks.map(function (b) { return block(b); }) : [el("p", { text: "Nothing set. Say \"what's next?\" in the hub session." })],
+      hasTask ? [el("div", { class: "act" }, [
+        confirmBtn("Done", "btn", function (btn) { save({ action: "done-current", expect: curText }, btn); }),
+        el("span", { class: "p-id", text: "Logs it and moves the next task up." }),
+      ])] : []
     )));
     if (d.now.intro.length) view.appendChild(el("div", { class: "note" }, d.now.intro.map(function (b) { return block(b); })));
 
@@ -409,7 +448,7 @@
       runKids.push(b.type === "table" && emptyTable(b) ? el("p", { class: "idle", text: "Nothing running." }) : block(b));
     });
     if (!runKids.length) runKids.push(el("p", { class: "idle", text: "Nothing running." }));
-    var queueKids = (queue ? queue.blocks : []).map(function (b) { return block(b); });
+    var queueKids = (queue ? queue.blocks : []).map(function (b) { return block(b, { queue: true }); });
     if (!queueKids.length) queueKids.push(el("p", { class: "idle", text: "The queue is empty." }));
     view.appendChild(el("div", { class: "cols sec" }, [
       section("Running", [el("div", { class: "panel" }, runKids)]),
@@ -436,6 +475,7 @@
 
     renderProjects();
     renderLog();
+    open.forEach(function (id) { var x = document.querySelector('details.proj[data-id="' + id + '"]'); if (x) x.open = true; });
 
     var bits = [];
     if (d.commit && d.commit.at) bits.push("Hub updated " + since(d.commit.at));
@@ -465,6 +505,42 @@
     $("page-msg").textContent = "";
     state.data = data;
     render();
+  }
+
+  function toast(text) {
+    var old = document.querySelector(".toast");
+    if (old) old.remove();
+    var t = el("div", { class: "toast", role: "status", text: text });
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 3500);
+  }
+
+  // Every change is one commit to the hub; the reply is the hub as it now stands.
+  var saving = false;
+  async function save(body, btn) {
+    if (saving) return;
+    saving = true;
+    if (btn) btn.disabled = true;
+    var y = window.scrollY, r, data = {};
+    try {
+      r = await fetch("/api/admin/work", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      try { data = await r.json(); } catch (e) {}
+    } catch (e) {
+      r = { ok: false, status: 0 };
+      data = { error: "Couldn't reach the server." };
+    }
+    saving = false;
+    if (r.status === 401) { showLogin(); return; }
+    if (!r.ok) {
+      if (btn) btn.disabled = false;
+      toast(data.error || "Couldn't save that.");
+      if (r.status === 409) load(true);
+      return;
+    }
+    state.data = data;
+    render();
+    window.scrollTo(0, y);
+    toast("Saved to the hub" + (data.saved ? " (" + data.saved + ")" : ""));
   }
 
   $("login").addEventListener("submit", async function (e) {

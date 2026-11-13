@@ -1,33 +1,42 @@
 // The task hub behind /admin/work. The hub is a private GitHub repo of markdown
 // (aschottky/hub: NOW.md, LOG.md, INBOX.md, projects/*.md) that Claude keeps
 // current. This reads it with a read-only token and turns it into JSON for the
-// page. Nothing here writes: corrections go through a hub session.
+// page. The page can also tick things off (api/_lib/hub-write.mjs builds the
+// edits; commitFiles here pushes them as one commit). Anything bigger than
+// "done" still goes through a hub session.
 //
-// Env: HUB_GITHUB_TOKEN (fine-grained token, Contents: read-only, on the hub
-// repo only), HUB_REPO (default "aschottky/hub"), HUB_BRANCH (default "main").
+// Env: HUB_GITHUB_TOKEN (fine-grained token, Contents: read and write, on the
+// hub repo only), HUB_REPO (default "aschottky/hub"), HUB_BRANCH (default "main").
 
 const REPO = () => process.env.HUB_REPO?.trim() || "aschottky/hub";
 const BRANCH = () => process.env.HUB_BRANCH?.trim() || "main";
 const CACHE_MS = 60 * 1000;
 let cache = null; // { at, data } — per warm function instance
 
-async function gh(path, raw) {
+async function gh(path, { raw = false, method = "GET", body } = {}) {
   const token = process.env.HUB_GITHUB_TOKEN?.trim();
   if (!token) throw new Error("HUB_GITHUB_TOKEN is not set");
   const url = `https://api.github.com/repos/${REPO()}/${path}`;
   const r = await fetch(url, {
+    method,
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: raw ? "application/vnd.github.raw" : "application/vnd.github+json",
       "X-GitHub-Api-Version": "2022-11-28",
       "User-Agent": "schottky-admin-work",
+      ...(body ? { "Content-Type": "application/json" } : {}),
     },
+    body: body ? JSON.stringify(body) : undefined,
   });
-  if (!r.ok) throw new Error(`GitHub ${r.status} on ${path.split("?")[0]}`);
+  if (!r.ok) {
+    const err = new Error(`GitHub ${r.status} on ${path.split("?")[0]}`);
+    err.status = r.status;
+    throw err;
+  }
   return raw ? r.text() : r.json();
 }
 
-const file = (name) => gh(`contents/${name}?ref=${encodeURIComponent(BRANCH())}`, true);
+const file = (name, ref = BRANCH()) => gh(`contents/${name}?ref=${encodeURIComponent(ref)}`, { raw: true });
 
 export async function loadHub({ fresh = false } = {}) {
   if (!fresh && cache && Date.now() - cache.at < CACHE_MS) return cache.data;
@@ -51,6 +60,30 @@ export async function loadHub({ fresh = false } = {}) {
   data.fetchedAt = new Date().toISOString();
   cache = { at: Date.now(), data };
   return data;
+}
+
+// One commit that changes several files: edit(read) gets a reader for files at
+// the branch tip and returns { files: { path: text }, message }. The ref only
+// moves forward, so if someone pushed in between we rebuild on the new tip.
+export async function commitFiles(edit) {
+  const branch = encodeURIComponent(BRANCH());
+  for (let attempt = 0; ; attempt++) {
+    const tip = (await gh(`git/ref/heads/${branch}`)).object.sha;
+    const base = (await gh(`git/commits/${tip}`)).tree.sha;
+    const { files, message } = await edit((name) => file(name, tip));
+    const tree = await gh("git/trees", {
+      method: "POST",
+      body: { base_tree: base, tree: Object.entries(files).map(([path, content]) => ({ path, mode: "100644", type: "blob", content })) },
+    });
+    const commit = await gh("git/commits", { method: "POST", body: { message, tree: tree.sha, parents: [tip] } });
+    try {
+      await gh(`git/refs/heads/${branch}`, { method: "PATCH", body: { sha: commit.sha, force: false } });
+      cache = null;
+      return commit.sha;
+    } catch (err) {
+      if (err.status !== 422 || attempt >= 2) throw err;
+    }
+  }
 }
 
 /* ---------- markdown, just enough for the hub's own files ---------- */
