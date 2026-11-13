@@ -530,7 +530,7 @@
         el("div", { class: "row" }, [
           diff ? el("button", { class: "btn", type: "button", text: "Apply to the hub", onclick: function () { applyProposal(id, this); } }) : null,
           el("button", { class: "btn ghost", type: "button", text: "Discard", onclick: function () { delete f.proposals[id]; renderFlip(); } }),
-          el("span", { class: "hint", text: pr.model + (pr.usage ? ", " + pr.usage.input + " in / " + pr.usage.output + " out" : "") }),
+          el("span", { class: "hint", text: [pr.model, pr.usage ? pr.usage.input + " in / " + pr.usage.output + " out" : "", typeof pr.cost === "number" ? "$" + pr.cost.toFixed(pr.cost < 0.1 ? 3 : 2) : "", pr.elapsed ? Math.round(pr.elapsed / 1000) + " s" + (pr.ms ? " (" + Math.round(pr.ms / 1000) + " s in Claude)" : "") : ""].filter(Boolean).join(", ") }),
         ]),
       ]));
     }
@@ -610,7 +610,7 @@
     renderFlip();
     var ctl = typeof AbortController === "function" ? new AbortController() : null;
     var timer = ctl && setTimeout(function () { ctl.abort(); }, 88000);
-    var r, data = {};
+    var started = Date.now(), r, data = {};
     try {
       r = await fetch("/api/admin/hub-correct", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ project: id, text: text }), signal: ctl ? ctl.signal : undefined });
       try { data = await r.json(); } catch (e) {}
@@ -622,7 +622,7 @@
     delete f.busy[id];
     if (r.status === 401) { showLogin(); return; }
     if (!r.ok) f.errors[id] = data.error || "Claude couldn't make the edit. Try again.";
-    else f.proposals[id] = data;
+    else { data.elapsed = Date.now() - started; f.proposals[id] = data; }
     renderFlip();
   }
 

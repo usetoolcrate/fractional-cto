@@ -19,6 +19,20 @@ const TIMEOUT_MS = 75 * 1000;
 const MAX_TOKENS = 12000; // a project file is a few hundred lines at most
 const NOT_CONNECTED = "Claude isn't connected yet: add ANTHROPIC_API_KEY in Vercel (see scripts/README.md).";
 
+// USD per million tokens, input and output, for the cost shown on the card.
+// Cache reads are billed at a tenth of input, cache writes at 1.25x.
+const PRICES = {
+  "claude-opus-5-5": [4, 20], "claude-opus-5": [5, 25], "claude-opus-4-8": [5, 25], "claude-opus-4-7": [5, 25],
+  "claude-sonnet-5-5": [2, 10], "claude-sonnet-5": [2, 10], "claude-haiku-5-5": [0.1, 0.5],
+  "claude-fable-5-2": [8, 40], "claude-fable-5-1": [10, 50],
+};
+function cost(model, u) {
+  const p = PRICES[model];
+  if (!p || !u) return null;
+  const usd = ((u.input_tokens || 0) * p[0] + (u.output_tokens || 0) * p[1] + (u.cache_read_input_tokens || 0) * p[0] * 0.1 + (u.cache_creation_input_tokens || 0) * p[0] * 1.25) / 1e6;
+  return Math.round(usd * 10000) / 10000;
+}
+
 const SCHEMA = {
   type: "object",
   properties: {
@@ -78,6 +92,7 @@ async function ask({ id, file, rules, text }) {
   const date = today();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const started = Date.now();
   let r;
   try {
     r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -133,6 +148,8 @@ async function ask({ id, file, rules, text }) {
     summary: ascii(parsed.summary).trim(),
     model: data.model || MODEL(),
     usage: data.usage ? { input: data.usage.input_tokens, output: data.usage.output_tokens } : null,
+    cost: cost(data.model || MODEL(), data.usage),
+    ms: Date.now() - started,
     date,
   };
 }
