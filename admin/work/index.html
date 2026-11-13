@@ -26,6 +26,9 @@
   :focus-visible{outline:2px solid var(--accent-bright);outline-offset:2px}
   [hidden]{display:none !important}
   code{font-family:var(--mono);font-size:.88em;background:var(--paper-deep);border-radius:4px;padding:1px 5px;overflow-wrap:anywhere}
+  button.path{font-family:var(--mono);font-size:.88em;background:var(--paper-deep);color:var(--ink);border:1px dashed #cdc4b2;border-radius:4px;padding:0 5px;cursor:copy;overflow-wrap:anywhere;text-align:left}
+  button.path:hover{border-color:var(--accent);color:var(--accent)}
+  .now a,.next a,.p-next a,ul.checks a,ul.plain a,dl.dt a,.tbl a{text-decoration-thickness:1px;text-underline-offset:2px}
 
   header{border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:5}
   .bar{max-width:1240px;margin:0 auto;padding-inline:20px;height:58px;display:flex;align-items:center;gap:12px}
@@ -149,7 +152,9 @@
   .card-head{display:flex;align-items:baseline;gap:8px 12px;flex-wrap:wrap}
   .card-head h2{font-size:1.75rem;margin-right:auto;overflow-wrap:anywhere}
   .card-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px 32px;margin-top:16px;align-items:start}
-  .card h3{font-family:'Inter',sans-serif;font-size:.68rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px}
+  .card h3{font-family:'Inter',sans-serif;font-size:.68rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px;display:flex;align-items:baseline;gap:12px}
+  .card h3 .toggle{font-size:.78rem;font-weight:500;letter-spacing:0;text-transform:none;margin-left:auto}
+  .card .hint{margin-top:4px}
   .card .stack>div+div{margin-top:4px}
   .card .next{border-left:4px solid var(--accent);background:var(--accent-tint);border-radius:0 8px 8px 0;padding:10px 14px;font-size:1.02rem;overflow-wrap:anywhere}
   dl.dt.wide{grid-template-columns:7.5rem minmax(0,1fr)}
@@ -261,14 +266,45 @@
     return n;
   }
 
-  // The hub's markdown uses **bold** and `code` inline; everything else is plain text.
-  function rich(text) {
+  // The hub's markdown uses **bold** and `code` inline. Beyond that, anything a
+  // task points at becomes something to click: URLs and bare domains open in a
+  // new tab, owner/repo in the Repos line goes to GitHub, and a local path (the
+  // proposals folder, a file in a repo) copies itself so it can be pasted into
+  // Finder's Go to Folder or a terminal.
+  var TOKEN = new RegExp([
+    "\\*\\*[^*]+\\*\\*",
+    "`[^`]+`",
+    "https?:\\/\\/[^\\s<>()\"']+",
+    "(?<![\\w@\\/.-])(?:[a-z0-9-]+\\.)+(?:com|org|net|gov|edu|io|app|dev|us)\\b(?:\\/[^\\s<>()\"']*)?",
+    "(?<![\\w\\/.-])(?:~\\/|\\.\\.?\\/)[\\w.@-]+(?:\\/[\\w.@-]+)*\\/?",
+    "(?<![\\w\\/.-])[\\w.-]*[A-Za-z][\\w.-]*(?:\\/[\\w.@-]+)+\\/?",
+  ].map(function (r) { return "(?:" + r + ")"; }).join("|"));
+  var SPLIT = new RegExp("(" + TOKEN.source + ")");
+  var NOT_PATHS = /^(and\/or|w\/o|i\/o|n\/a|y\/n|[a-z]{1,2}\/[a-z]{1,2})$/i;
+  function copyChip(text) {
+    return el("button", { class: "path", type: "button", title: "Click to copy this path", text: text, onclick: function () {
+      var done = function () { toast("Copied: " + text); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, done);
+      else done();
+    } });
+  }
+  function rich(text, opts) {
     var frag = document.createDocumentFragment();
-    String(text || "").split(/(\*\*[^*]+\*\*|`[^`]+`)/).forEach(function (part) {
+    // split() alternates plain text (even) and matched tokens (odd).
+    String(text || "").split(SPLIT).forEach(function (part, i) {
       if (!part) return;
+      if (i % 2 === 0) { frag.appendChild(document.createTextNode(part)); return; }
+      var tail = "";
+      var m = /[.,;:)]+$/.exec(part);
+      if (m && !/^\*\*|^`/.test(part)) { tail = m[0]; part = part.slice(0, -tail.length); if (/\(/.test(part) && tail[0] === ")") { part += ")"; tail = tail.slice(1); } }
       if (/^\*\*[^*]+\*\*$/.test(part)) frag.appendChild(el("b", { text: part.slice(2, -2) }));
       else if (/^`[^`]+`$/.test(part)) frag.appendChild(el("code", { text: part.slice(1, -1) }));
+      else if (/^https?:\/\//.test(part)) frag.appendChild(el("a", { href: part, target: "_blank", rel: "noopener", text: part }));
+      else if (/^(?:[a-z0-9-]+\.)+(?:com|org|net|gov|edu|io|app|dev|us)\b/.test(part) && !/^[\w.-]*\/.*\/|^\w+\.(?:md|js|mjs|ts|json|csv|php|py)$/.test(part)) frag.appendChild(el("a", { href: "https://" + part, target: "_blank", rel: "noopener", text: part }));
+      else if (opts && opts.repos && /^[\w-]+\/[\w.-]+$/.test(part) && !/\.[a-z]{1,5}$/i.test(part)) frag.appendChild(el("a", { href: "https://github.com/" + part, target: "_blank", rel: "noopener", text: part }));
+      else if (/\//.test(part) && !NOT_PATHS.test(part)) frag.appendChild(copyChip(part));
       else frag.appendChild(document.createTextNode(part));
+      if (tail) frag.appendChild(document.createTextNode(tail));
     });
     return frag;
   }
@@ -320,7 +356,12 @@
       return el("li", { class: t.done ? "done" : "" }, [
         el("button", {
           class: "box", type: "button", role: "checkbox", "aria-checked": String(t.done), "aria-label": (t.done ? "Reopen: " : "Mark done: ") + t.text,
-          onclick: function (e) { e.preventDefault(); save({ action: "task", project: project || "", text: t.text, done: !t.done }, this); },
+          onclick: function (e) {
+            e.preventDefault();
+            var r = state.flip.recent;
+            if (project && !t.done) (r[project] = r[project] || []).push(t.text);
+            save({ action: "task", project: project || "", text: t.text, done: !t.done }, this);
+          },
         }),
         el("span", {}, [rich(t.text)]),
       ]);
@@ -365,7 +406,7 @@
     data: null, status: "active", query: "", log: "",
     mode: location.hash === "#projects" ? "projects" : "overview",
     // Projects mode: which card, which filter, and per project the draft, the pending ask, Claude's proposal or its error.
-    flip: { status: "active", index: 0, drafts: {}, busy: {}, proposals: {}, errors: {} },
+    flip: { status: "active", index: 0, drafts: {}, busy: {}, proposals: {}, errors: {}, recent: {} },
   };
 
   function stale(p) { var n = daysFrom(p.touched); return p.status === "active" && n !== null && -n > STALE_DAYS; }
@@ -386,7 +427,7 @@
     ]));
     var facts = [["Type", p.type], ["Money", p.money], ["Deadline", p.deadline], ["Touched", p.touched ? p.touched + " (" + ago(p.touched) + ")" : "not recorded"], ["Handoff", p.handoff], ["Repos", p.repos]];
     var dl = el("dl", { class: "dt" });
-    facts.forEach(function (f) { if (f[1]) { dl.appendChild(el("dt", { text: f[0] })); dl.appendChild(el("dd", {}, [rich(f[1])])); } });
+    facts.forEach(function (f) { if (f[1]) { dl.appendChild(el("dt", { text: f[0] })); dl.appendChild(el("dd", {}, [rich(f[1], { repos: f[0] === "Repos" })])); } });
     d.appendChild(el("div", { class: "p-body" }, [
       el("div", { class: "stack" }, [
         p.tasks.length ? el("div", {}, [el("h3", { text: "Tasks" }), checks(p.tasks, p.id)]) : el("p", { class: "p-id", text: "No tasks listed." }),
@@ -446,6 +487,13 @@
   }
 
   /* ---------- projects mode: one card at a time ---------- */
+  var HIDE_KEY = "work.hideDone";
+  function hiddenDone() { try { return JSON.parse(localStorage.getItem(HIDE_KEY) || "{}") || {}; } catch (e) { return {}; } }
+  function setHiddenDone(id, on) {
+    var h = hiddenDone();
+    if (on) h[id] = true; else delete h[id];
+    try { localStorage.setItem(HIDE_KEY, JSON.stringify(h)); } catch (e) {}
+  }
   function deadlineKey(p) { var m = /(\d{4}-\d{2}-\d{2})/.exec(p.deadline || ""); return m ? m[1] : "9999-99-99"; }
   function flipRows() {
     var f = state.flip;
@@ -499,8 +547,15 @@
     var f = state.flip, id = p.id, st = STATUS[p.status] || [p.status || "Unknown", "muted"];
     var facts = [["Project", p.name], ["Type", p.type], ["Status", st[0]], ["Money", p.money || "none recorded"], ["Deadline", p.deadline || "none"], ["Last touched", p.touched ? p.touched + " (" + ago(p.touched) + ")" : "not recorded"], ["Repos", p.repos], ["Handoff", p.handoff]];
     var dl = el("dl", { class: "dt wide" });
-    facts.forEach(function (x) { if (x[1]) { dl.appendChild(el("dt", { text: x[0] })); dl.appendChild(el("dd", {}, [rich(x[1])])); } });
-    var open = p.tasks.filter(function (t) { return !t.done; });
+    facts.forEach(function (x) { if (x[1]) { dl.appendChild(el("dt", { text: x[0] })); dl.appendChild(el("dd", {}, [rich(x[1], { repos: x[0] === "Repos" })])); } });
+    var open = p.tasks.filter(function (t) { return !t.done; }), done = p.tasks.filter(function (t) { return t.done; });
+    var hide = hiddenDone()[id], recent = f.recent[id] || [];
+    // Hidden done tasks come back if they were ticked on this page: an accidental click stays one click from undone.
+    var shown = open.concat(done.filter(function (t) { return !hide || recent.indexOf(t.text) !== -1; }));
+    var tasksHead = el("h3", {}, [
+      "Tasks" + (p.tasks.length ? " (" + open.length + " open" + (done.length ? ", " + done.length + " done" : "") + ")" : ""),
+      done.length ? el("button", { class: "link toggle", type: "button", text: hide ? "Show done" : "Hide done", onclick: function () { setHiddenDone(id, !hide); renderFlip(); } }) : null,
+    ]);
     var logs = state.data.log.filter(function (e) { return e.project === id; }).slice(0, 8);
 
     var ta = el("textarea", {
@@ -546,7 +601,7 @@
       el("div", { class: "card-grid" }, [
         el("div", { class: "stack" }, [
           el("div", {}, [el("h3", { text: "Next action" }), el("div", { class: "next" }, [p.next ? rich(p.next) : "No Next action written."])]),
-          el("div", {}, [el("h3", { text: open.length ? "Open tasks (" + open.length + ")" : "Open tasks" }), open.length ? checks(open, id) : el("p", { class: "p-id", text: p.tasks.length ? "All " + p.tasks.length + " done." : "No tasks listed." })]),
+          el("div", {}, [tasksHead, shown.length ? checks(shown, id) : el("p", { class: "p-id", text: p.tasks.length ? "All " + p.tasks.length + " done and hidden." : "No tasks listed." }), shown.length ? el("p", { class: "hint", text: "Tick to mark done; it stays here struck through until you untick it or hide done tasks." }) : null]),
           p.waiting.length ? el("div", {}, [el("h3", { text: "Waiting on" }), el("ul", { class: "plain" }, p.waiting.map(function (t) { return el("li", {}, [rich(t)]); }))]) : null,
         ]),
         el("div", { class: "stack" }, [
