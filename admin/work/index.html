@@ -136,6 +136,50 @@
   .fix{font-size:.8rem;color:var(--ink-faint);margin-top:8px}
   .empty{padding:26px 20px;text-align:center;color:var(--ink-soft)}
 
+  /* Mode switch: the overview, or one project card at a time */
+  .modes{display:inline-flex;border:1px solid var(--line);border-radius:8px;background:var(--card);padding:2px}
+  .modes button{border:0;background:transparent;color:var(--ink-soft);font-weight:600;font-size:.86rem;padding:6px 14px;border-radius:6px;cursor:pointer}
+  .modes button[aria-pressed="true"]{background:var(--accent);color:#fff}
+
+  /* Projects mode */
+  .flip-tools{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap;margin-top:18px}
+  .flip-nav{display:flex;gap:8px;align-items:center;margin-left:auto}
+  .flip-nav .pos{font-variant-numeric:tabular-nums;color:var(--ink-soft);font-size:.88rem;min-width:4.5em;text-align:center}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-top:14px;padding:22px 24px 24px;box-shadow:0 1px 3px rgba(28,30,33,.06);min-width:0}
+  .card-head{display:flex;align-items:baseline;gap:8px 12px;flex-wrap:wrap}
+  .card-head h2{font-size:1.75rem;margin-right:auto;overflow-wrap:anywhere}
+  .card-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px 32px;margin-top:16px;align-items:start}
+  .card h3{font-family:'Inter',sans-serif;font-size:.68rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px}
+  .card .stack>div+div{margin-top:4px}
+  .card .next{border-left:4px solid var(--accent);background:var(--accent-tint);border-radius:0 8px 8px 0;padding:10px 14px;font-size:1.02rem;overflow-wrap:anywhere}
+  dl.dt.wide{grid-template-columns:7.5rem minmax(0,1fr)}
+  ul.logs{list-style:none;display:flex;flex-direction:column;gap:5px}
+  ul.logs li{font-size:.88rem;overflow-wrap:anywhere;display:grid;grid-template-columns:6.2rem minmax(0,1fr);gap:0 8px}
+  ul.logs li .d{color:var(--ink-faint);font-variant-numeric:tabular-nums}
+  details.more>summary{cursor:pointer;font-size:.86rem;color:var(--ink-soft);list-style:none}
+  details.more>summary::-webkit-details-marker{display:none}
+  details.more>summary::before{content:"+ "}
+  details.more[open]>summary::before{content:"- "}
+  .ask{margin-top:22px;border-top:1px solid var(--line);padding-top:18px}
+  .ask label.f{font-size:.92rem;color:var(--ink);gap:8px}
+  .ask textarea.i{min-height:84px;resize:vertical;line-height:1.5}
+  .ask .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .ask .hint{font-size:.82rem;color:var(--ink-faint)}
+  .busy{display:inline-flex;align-items:center;gap:8px;color:var(--ink-soft);font-size:.9rem}
+  .busy::before{content:"";width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .proposal{margin-top:16px;border:1px solid var(--brass);border-left-width:5px;border-radius:10px;background:var(--card);padding:14px 16px}
+  .proposal .k{font-size:.7rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--brass)}
+  .proposal p{margin-top:6px;overflow-wrap:anywhere}
+  .proposal .logline{margin-top:8px;font-family:var(--mono);font-size:.8rem;color:var(--ink-soft);background:var(--paper-deep);border-radius:6px;padding:6px 10px;overflow-wrap:anywhere}
+  .diff{margin-top:12px;font-family:var(--mono);font-size:.78rem;line-height:1.5;background:var(--paper);border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:60vh}
+  .diff div{padding:0 12px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .diff .add{background:#e3f2e8;color:#15553a}
+  .diff .del{background:#f9e3df;color:#7e2d1f;text-decoration:line-through;text-decoration-color:rgba(126,45,31,.45)}
+  .diff .skip{color:var(--ink-faint);background:var(--paper-deep);text-align:center;font-size:.72rem}
+  .proposal .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}
+  .proposal .same{margin-top:10px;color:var(--ink-soft);font-size:.9rem}
+
   /* Done log */
   .day{display:grid;grid-template-columns:7.5rem minmax(0,1fr);gap:0 14px;padding:12px 16px;border-top:1px solid var(--line)}
   .day:first-child{border-top:0}
@@ -149,6 +193,8 @@
     .cols{grid-template-columns:minmax(0,1fr)}
     .cols .sec+.sec{margin-top:10px}
     .p-body{grid-template-columns:minmax(0,1fr);padding-left:16px}
+    .card-grid{grid-template-columns:minmax(0,1fr)}
+    .card{padding:18px 16px 20px}
     .bar,.wrap{padding-inline:16px}
   }
   @media (max-width:560px){
@@ -185,7 +231,10 @@
 <main class="wrap" id="app" hidden>
   <div class="top">
     <h1>Work</h1>
-    <p class="meta"><span id="stamp">Loading…</span><button class="btn ghost small" id="refresh" type="button">Refresh</button></p>
+    <p class="meta">
+      <span class="modes" role="group" aria-label="View"><button type="button" id="mode-overview" aria-pressed="true">Overview</button><button type="button" id="mode-projects" aria-pressed="false">Projects</button></span>
+      <span id="stamp">Loading…</span><button class="btn ghost small" id="refresh" type="button">Refresh</button>
+    </p>
   </div>
   <p class="msg err" id="page-msg" role="alert"></p>
   <div id="view"></div>
@@ -312,7 +361,12 @@
   function emptyTable(b) { return !b.rows.length || b.rows.every(function (r) { return r.filter(Boolean).length <= 1; }); }
 
   /* ---------- projects ---------- */
-  var state = { data: null, status: "active", query: "", log: "" };
+  var state = {
+    data: null, status: "active", query: "", log: "",
+    mode: location.hash === "#projects" ? "projects" : "overview",
+    // Projects mode: which card, which filter, and per project the draft, the pending ask, Claude's proposal or its error.
+    flip: { status: "active", index: 0, drafts: {}, busy: {}, proposals: {}, errors: {} },
+  };
 
   function stale(p) { var n = daysFrom(p.touched); return p.status === "active" && n !== null && -n > STALE_DAYS; }
 
@@ -341,7 +395,7 @@
       el("div", { class: "stack" }, [
         dl,
         p.notes.length ? el("div", {}, [el("h3", { text: "Notes" }), el("ul", { class: "plain" }, p.notes.map(function (t) { return el("li", {}, [rich(t)]); }))]) : null,
-        el("p", { class: "fix" }, ["Tick a task to mark it done. For anything else, tell the hub session: ", el("code", { text: "@" + p.id }), " and what to change."]),
+        el("p", { class: "fix" }, ["Tick a task to mark it done. For anything else, ", el("button", { class: "link", type: "button", text: "open it in Projects", onclick: function () { setMode("projects", p.id); } }), " and tell Claude what changed."]),
       ]),
     ]));
     return d;
@@ -391,6 +445,196 @@
     return section("Projects", [el("div", { class: "tools" }, [chips, search]), el("div", { class: "list", id: "projects" })]);
   }
 
+  /* ---------- projects mode: one card at a time ---------- */
+  function deadlineKey(p) { var m = /(\d{4}-\d{2}-\d{2})/.exec(p.deadline || ""); return m ? m[1] : "9999-99-99"; }
+  function flipRows() {
+    var f = state.flip;
+    var rows = state.data.projects.filter(function (p) { return f.status === "all" || p.status === f.status; });
+    rows.sort(function (a, b) {
+      var s = ORDER.indexOf(a.status) - ORDER.indexOf(b.status);
+      if (s) return s;
+      return deadlineKey(a).localeCompare(deadlineKey(b)) || a.name.localeCompare(b.name);
+    });
+    return rows;
+  }
+
+  // Line diff by longest common subsequence; project files are a few hundred lines at most.
+  function diffLines(a, b) {
+    var A = a.replace(/\n$/, "").split("\n"), B = b.replace(/\n$/, "").split("\n");
+    var n = A.length, m = B.length, i, j;
+    var L = [];
+    for (i = 0; i <= n; i++) { L.push(new Uint16Array(m + 1)); }
+    for (i = n - 1; i >= 0; i--) for (j = m - 1; j >= 0; j--) L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+    var out = [];
+    i = 0; j = 0;
+    while (i < n && j < m) {
+      if (A[i] === B[j]) { out.push({ t: " ", s: A[i] }); i++; j++; }
+      else if (L[i + 1][j] >= L[i][j + 1]) { out.push({ t: "-", s: A[i] }); i++; }
+      else { out.push({ t: "+", s: B[j] }); j++; }
+    }
+    while (i < n) out.push({ t: "-", s: A[i++] });
+    while (j < m) out.push({ t: "+", s: B[j++] });
+    return out;
+  }
+  function renderDiff(a, b) {
+    var rows = diffLines(a, b), box = el("div", { class: "diff", role: "region", "aria-label": "Proposed changes" });
+    var CONTEXT = 3, changed = rows.some(function (r) { return r.t !== " "; });
+    if (!changed) return null;
+    var keep = rows.map(function (r, k) {
+      if (r.t !== " ") return true;
+      for (var d = 1; d <= CONTEXT; d++) if ((rows[k - d] && rows[k - d].t !== " ") || (rows[k + d] && rows[k + d].t !== " ")) return true;
+      return false;
+    });
+    var skipped = 0;
+    rows.forEach(function (r, k) {
+      if (!keep[k]) { skipped++; return; }
+      if (skipped) { box.appendChild(el("div", { class: "skip", text: skipped + " unchanged line" + (skipped === 1 ? "" : "s") })); skipped = 0; }
+      box.appendChild(el("div", { class: r.t === "+" ? "add" : r.t === "-" ? "del" : "", text: (r.t === " " ? "  " : r.t + " ") + (r.s || " ") }));
+    });
+    if (skipped) box.appendChild(el("div", { class: "skip", text: skipped + " unchanged line" + (skipped === 1 ? "" : "s") }));
+    return box;
+  }
+
+  function projectCard(p) {
+    var f = state.flip, id = p.id, st = STATUS[p.status] || [p.status || "Unknown", "muted"];
+    var facts = [["Project", p.name], ["Type", p.type], ["Status", st[0]], ["Money", p.money || "none recorded"], ["Deadline", p.deadline || "none"], ["Last touched", p.touched ? p.touched + " (" + ago(p.touched) + ")" : "not recorded"], ["Repos", p.repos], ["Handoff", p.handoff]];
+    var dl = el("dl", { class: "dt wide" });
+    facts.forEach(function (x) { if (x[1]) { dl.appendChild(el("dt", { text: x[0] })); dl.appendChild(el("dd", {}, [rich(x[1])])); } });
+    var open = p.tasks.filter(function (t) { return !t.done; });
+    var logs = state.data.log.filter(function (e) { return e.project === id; }).slice(0, 8);
+
+    var ta = el("textarea", {
+      class: "i", id: "ask-" + id, rows: 3, placeholder: "For example: the back pay is settled, remove it. add: call Rick Monday",
+      value: f.drafts[id] || "", disabled: f.busy[id] ? true : null,
+      oninput: function () { f.drafts[id] = this.value; go.disabled = !this.value.trim(); },
+      onkeydown: function (e) { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); if (!go.disabled) ask(id); } },
+    });
+    var go = el("button", { class: "btn", type: "button", text: "Ask Claude", disabled: f.busy[id] || !(f.drafts[id] || "").trim() ? true : null, onclick: function () { ask(id); } });
+    var askKids = [
+      el("label", { class: "f", for: "ask-" + id }, ["Tell Claude what changed", ta]),
+      el("div", { class: "row" }, [
+        go,
+        f.busy[id] ? el("span", { class: "busy", text: "Asking Claude. This usually takes 15 to 40 seconds." }) : el("span", { class: "hint", text: "Claude proposes the edit to this file. Nothing is saved until you apply it. Cmd+Enter sends." }),
+      ]),
+    ];
+    if (f.errors[id]) askKids.push(el("p", { class: "msg err", role: "alert", text: f.errors[id] }));
+
+    var pr = f.proposals[id];
+    if (pr) {
+      var diff = renderDiff(pr.original, pr.file);
+      askKids.push(el("div", { class: "proposal" }, [
+        el("span", { class: "k", text: "Claude proposes" }),
+        el("p", {}, [rich(pr.summary)]),
+        el("div", { class: "logline", text: "LOG: " + pr.date + " | " + id + " | Correction (via admin): " + pr.log }),
+        diff || el("p", { class: "same", text: "The file would not change. Nothing to apply." }),
+        el("div", { class: "row" }, [
+          diff ? el("button", { class: "btn", type: "button", text: "Apply to the hub", onclick: function () { applyProposal(id, this); } }) : null,
+          el("button", { class: "btn ghost", type: "button", text: "Discard", onclick: function () { delete f.proposals[id]; renderFlip(); } }),
+          el("span", { class: "hint", text: pr.model + (pr.usage ? ", " + pr.usage.input + " in / " + pr.usage.output + " out" : "") }),
+        ]),
+      ]));
+    }
+
+    return el("article", { class: "card", "aria-label": p.name }, [
+      el("div", { class: "card-head" }, [
+        el("h2", { text: p.name }),
+        el("span", { class: "p-id", text: id }),
+        stale(p) ? el("span", { class: "pill bad", text: "Stale" }) : null,
+        p.unconfirmed ? el("span", { class: "pill warn", title: "Contains guesses that still need your yes or no", text: "Unconfirmed" }) : null,
+        el("span", { class: "pill " + st[1], text: st[0] }),
+      ]),
+      el("div", { class: "card-grid" }, [
+        el("div", { class: "stack" }, [
+          el("div", {}, [el("h3", { text: "Next action" }), el("div", { class: "next" }, [p.next ? rich(p.next) : "No Next action written."])]),
+          el("div", {}, [el("h3", { text: open.length ? "Open tasks (" + open.length + ")" : "Open tasks" }), open.length ? checks(open, id) : el("p", { class: "p-id", text: p.tasks.length ? "All " + p.tasks.length + " done." : "No tasks listed." })]),
+          p.waiting.length ? el("div", {}, [el("h3", { text: "Waiting on" }), el("ul", { class: "plain" }, p.waiting.map(function (t) { return el("li", {}, [rich(t)]); }))]) : null,
+        ]),
+        el("div", { class: "stack" }, [
+          dl,
+          el("div", {}, [el("h3", { text: "Recent log" }), logs.length ? el("ul", { class: "logs" }, logs.map(function (e) { return el("li", {}, [el("span", { class: "d", text: e.date }), el("span", {}, [rich(e.text)])]); })) : el("p", { class: "p-id", text: "Nothing logged for this project yet." })]),
+          p.notes.length ? el("details", { class: "more" }, [el("summary", { text: "Notes (" + p.notes.length + ")" }), el("ul", { class: "plain" }, p.notes.map(function (t) { return el("li", {}, [rich(t)]); }))]) : null,
+        ]),
+      ]),
+      el("div", { class: "ask" }, askKids),
+    ]);
+  }
+
+  function renderFlip() {
+    var view = $("view"), f = state.flip;
+    if (state.mode !== "projects" || !state.data) return;
+    var rows = flipRows();
+    if (f.index >= rows.length) f.index = Math.max(0, rows.length - 1);
+    var focused = document.activeElement && document.activeElement.id;
+    var y = window.scrollY;
+    view.textContent = "";
+
+    var counts = { all: state.data.projects.length };
+    state.data.projects.forEach(function (p) { counts[p.status] = (counts[p.status] || 0) + 1; });
+    var chips = el("div", { class: "chips", role: "group", "aria-label": "Filter by status" });
+    ORDER.concat(["all"]).forEach(function (s) {
+      if (!counts[s]) return;
+      chips.appendChild(el("button", {
+        class: "chip", type: "button", "aria-pressed": String(f.status === s), text: (s === "all" ? "All" : STATUS[s][0]) + " " + counts[s],
+        onclick: function () { f.status = s; f.index = 0; renderFlip(); },
+      }));
+    });
+    var move = function (d) { if (!rows.length) return; f.index = (f.index + d + rows.length) % rows.length; renderFlip(); window.scrollTo(0, 0); };
+    view.appendChild(el("div", { class: "flip-tools" }, [chips, el("div", { class: "flip-nav" }, [
+      el("button", { class: "btn ghost small", type: "button", text: "← Prev", "aria-label": "Previous project", disabled: rows.length < 2 ? true : null, onclick: function () { move(-1); } }),
+      el("span", { class: "pos", text: rows.length ? (f.index + 1) + " / " + rows.length : "0 / 0" }),
+      el("button", { class: "btn ghost small", type: "button", text: "Next →", "aria-label": "Next project", disabled: rows.length < 2 ? true : null, onclick: function () { move(1); } }),
+    ])]));
+    if (!rows.length) view.appendChild(el("div", { class: "panel empty", text: "No projects with that status." }));
+    else view.appendChild(projectCard(rows[f.index]));
+    if (focused) { var again = $(focused); if (again) { again.focus(); if (again.setSelectionRange && again.value) again.setSelectionRange(again.value.length, again.value.length); } }
+    window.scrollTo(0, y);
+  }
+
+  function setMode(mode, projectId) {
+    state.mode = mode;
+    $("mode-overview").setAttribute("aria-pressed", String(mode === "overview"));
+    $("mode-projects").setAttribute("aria-pressed", String(mode === "projects"));
+    if (mode === "projects" && projectId && state.data) {
+      var p = state.data.projects.filter(function (x) { return x.id === projectId; })[0];
+      if (p) { state.flip.status = p.status; state.flip.index = Math.max(0, flipRows().map(function (x) { return x.id; }).indexOf(projectId)); }
+    }
+    if (history.replaceState) history.replaceState(null, "", mode === "projects" ? "#projects" : location.pathname);
+    if (state.data) render();
+    window.scrollTo(0, 0);
+  }
+
+  async function ask(id) {
+    var f = state.flip, text = (f.drafts[id] || "").trim();
+    if (!text || f.busy[id]) return;
+    f.busy[id] = true; delete f.errors[id]; delete f.proposals[id];
+    renderFlip();
+    var ctl = typeof AbortController === "function" ? new AbortController() : null;
+    var timer = ctl && setTimeout(function () { ctl.abort(); }, 88000);
+    var r, data = {};
+    try {
+      r = await fetch("/api/admin/hub-correct", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ project: id, text: text }), signal: ctl ? ctl.signal : undefined });
+      try { data = await r.json(); } catch (e) {}
+    } catch (e) {
+      r = { ok: false, status: 0 };
+      data = { error: e && e.name === "AbortError" ? "Claude took too long to answer. Try again." : "Couldn't reach the server." };
+    }
+    if (timer) clearTimeout(timer);
+    delete f.busy[id];
+    if (r.status === 401) { showLogin(); return; }
+    if (!r.ok) f.errors[id] = data.error || "Claude couldn't make the edit. Try again.";
+    else f.proposals[id] = data;
+    renderFlip();
+  }
+
+  function applyProposal(id, btn) {
+    var f = state.flip, pr = f.proposals[id];
+    if (!pr) return;
+    save({ action: "correct", project: id, original: pr.original, file: pr.file, log: pr.log }, btn, {
+      done: function () { delete f.proposals[id]; delete f.drafts[id]; },
+      stale: function () { delete f.proposals[id]; f.errors[id] = "The hub changed since Claude read this file. Ask again."; },
+    });
+  }
+
   /* ---------- done log ---------- */
   function renderLog() {
     var box = $("log");
@@ -423,7 +667,17 @@
   }
 
   /* ---------- page ---------- */
+  function stamp() {
+    var d = state.data, bits = [];
+    if (d.commit && d.commit.at) bits.push("Hub updated " + since(d.commit.at));
+    else if (d.now.updated) bits.push("Hub updated " + d.now.updated);
+    if (d.commit) bits.push(d.commit.sha);
+    $("stamp").textContent = bits.join(" · ") || "Loaded";
+    $("stamp").title = d.commit ? d.commit.message : "";
+  }
+
   function render() {
+    if (state.mode === "projects") { renderFlip(); stamp(); return; }
     var d = state.data, secs = d.now.sections, view = $("view");
     var open = Array.prototype.map.call(document.querySelectorAll("details.proj[open]"), function (x) { return x.getAttribute("data-id"); });
     var used = [];
@@ -476,13 +730,7 @@
     renderProjects();
     renderLog();
     open.forEach(function (id) { var x = document.querySelector('details.proj[data-id="' + id + '"]'); if (x) x.open = true; });
-
-    var bits = [];
-    if (d.commit && d.commit.at) bits.push("Hub updated " + since(d.commit.at));
-    else if (d.now.updated) bits.push("Hub updated " + d.now.updated);
-    if (d.commit) bits.push(d.commit.sha);
-    $("stamp").textContent = bits.join(" · ") || "Loaded";
-    $("stamp").title = d.commit ? d.commit.message : "";
+    stamp();
   }
 
   function showLogin() { $("login").hidden = false; $("app").hidden = true; $("signout").hidden = true; $("pw").focus(); }
@@ -516,8 +764,9 @@
   }
 
   // Every change is one commit to the hub; the reply is the hub as it now stands.
+  // hooks: { done() } runs on success before the page re-renders, { stale() } when the hub moved on (409).
   var saving = false;
-  async function save(body, btn) {
+  async function save(body, btn, hooks) {
     if (saving) return;
     saving = true;
     if (btn) btn.disabled = true;
@@ -534,9 +783,10 @@
     if (!r.ok) {
       if (btn) btn.disabled = false;
       toast(data.error || "Couldn't save that.");
-      if (r.status === 409) load(true);
+      if (r.status === 409) { if (hooks && hooks.stale) hooks.stale(); load(true); }
       return;
     }
+    if (hooks && hooks.done) hooks.done();
     state.data = data;
     render();
     window.scrollTo(0, y);
@@ -558,6 +808,23 @@
     showLogin();
   });
   $("refresh").addEventListener("click", function () { load(true); });
+  $("mode-overview").addEventListener("click", function () { setMode("overview"); });
+  $("mode-projects").addEventListener("click", function () { setMode("projects"); });
+  $("mode-projects").setAttribute("aria-pressed", String(state.mode === "projects"));
+  $("mode-overview").setAttribute("aria-pressed", String(state.mode === "overview"));
+  // Arrow keys flip cards when nothing is being typed.
+  document.addEventListener("keydown", function (e) {
+    if (state.mode !== "projects" || !state.data || e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target, tag = t && t.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    var rows = flipRows();
+    if (rows.length < 2) return;
+    e.preventDefault();
+    state.flip.index = (state.flip.index + (e.key === "ArrowRight" ? 1 : -1) + rows.length) % rows.length;
+    renderFlip();
+    window.scrollTo(0, 0);
+  });
   // Coming back to the tab after a while shows the latest without a click.
   var loadedAt = Date.now();
   document.addEventListener("visibilitychange", function () {

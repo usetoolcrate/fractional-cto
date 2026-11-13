@@ -1,4 +1,7 @@
 {
+  "functions": {
+    "api/admin/hub-correct.mjs": { "maxDuration": 90 }
+  },
   "redirects": [
     {
       "source": "/chickens",

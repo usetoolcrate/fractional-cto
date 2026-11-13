@@ -4,10 +4,11 @@
 // POST { action, … } ticks something off and commits it to the hub
 // (api/_lib/hub-write.mjs), then returns the hub as it now stands.
 // Actions: done-current { expect }, done-queue { index, text },
-// task { project, text, done } (project empty = a checklist in NOW.md).
+// task { project, text, done } (project empty = a checklist in NOW.md),
+// correct { project, original, file, log } (apply what api/admin/hub-correct.mjs proposed).
 import { guard, readJson } from "../_lib/admin.mjs";
 import { commitFiles, loadHub } from "../_lib/hub.mjs";
-import { Stale, doneCurrent, doneQueue, setTask } from "../_lib/hub-write.mjs";
+import { Stale, applyCorrection, doneCurrent, doneQueue, setTask } from "../_lib/hub-write.mjs";
 import { json } from "../_lib/session.mjs";
 
 const setup = (err) => /HUB_GITHUB_TOKEN/.test(err.message);
@@ -34,6 +35,7 @@ export async function POST(request) {
     if (body.action === "done-current") edit = doneCurrent(body);
     else if (body.action === "done-queue") edit = doneQueue(body);
     else if (body.action === "task") edit = setTask(body);
+    else if (body.action === "correct") edit = applyCorrection(body);
     else return json({ error: "Unknown action" }, 400);
     const sha = await commitFiles(edit);
     return json({ ...(await loadHub({ fresh: true })), saved: sha.slice(0, 7) });

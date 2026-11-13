@@ -1,8 +1,9 @@
 // The few edits /admin/work can make to the task hub: finish the current task
-// (the next one in the queue takes its place), finish a queue item, and tick or
-// untick a task in NOW.md or a project file. Each edit also adds a line to
-// LOG.md, marked "(via admin)" so a hub session knows to fold it into the
-// project's Next action. Pure text in, text out: hub.mjs does the commit.
+// (the next one in the queue takes its place), finish a queue item, tick or
+// untick a task in NOW.md or a project file, and apply a correction to a
+// project file that Claude drafted (api/admin/hub-correct.mjs). Each edit also
+// adds a line to LOG.md, marked "(via admin)" so a hub session knows to fold it
+// into NOW.md. Pure text in, text out: hub.mjs does the commit.
 //
 // Every edit names the text it expects to find. If the hub moved on since the
 // page loaded, the edit refuses instead of ticking the wrong thing.
@@ -148,6 +149,38 @@ export function setTask({ project, text, done }) {
     return {
       files: { [path]: lines.join("\n"), "LOG.md": addLog(log, date, id || "hub", `${done ? "Done" : "Reopened"} (via admin): ${what}`) },
       message: `hub: ${id || "hub"} - ${done ? "done" : "reopened"} via admin: ${clip(what, 60)}`,
+    };
+  };
+}
+
+// Claude's proposed rewrite of a project file, reviewed by Alexander on the
+// page. `original` is the file as Claude read it: if the hub has moved on since,
+// the edit refuses rather than overwrite someone else's change. `log` is the
+// text of the LOG.md line (after "date | project |").
+export function applyCorrection({ project, original, file, log }) {
+  const id = String(project || "");
+  if (!/^[a-z0-9][a-z0-9-]{0,80}$/.test(id)) throw new Stale("Unknown project.");
+  const path = `projects/${id}.md`;
+  const text = String(file || "").replace(/\r/g, "").replace(/\s+$/, "") + "\n";
+  if (!/^---\n[\s\S]*?\n---\n/.test(text) || !/^## Next action\s*$/m.test(text)) {
+    throw new Stale("Claude's file is missing its front matter or Next action. Ask again.");
+  }
+  const line = norm(String(log || "").replace(/^-\s*/, "").replace(/^\d{4}-\d{2}-\d{2}\s*\|\s*[^|]*\|\s*/, "").replace(/\|/g, "/").replace(/\s*\(via admin\)/gi, "").replace(/^correction(\s+per\s+alexander)?\s*(\([^)]*\))?\s*:\s*/i, ""));
+  if (!line) throw new Stale("Claude gave no LOG line. Ask again.");
+  return async (read) => {
+    const [current, logText] = await Promise.all([read(path), read("LOG.md")]);
+    if (current.replace(/\r/g, "") !== String(original || "").replace(/\r/g, "")) {
+      throw new Stale("The project file changed since Claude read it. Ask again.");
+    }
+    const date = today();
+    const lines = text.split("\n");
+    const end = lines.indexOf("---", 1);
+    const at = lines.findIndex((l, i) => i > 0 && i < end && /^last_touched:/.test(l));
+    if (at !== -1) lines[at] = `last_touched: ${date}`;
+    else lines.splice(end, 0, `last_touched: ${date}`);
+    return {
+      files: { [path]: lines.join("\n"), "LOG.md": addLog(logText, date, id, `Correction (via admin): ${line}`) },
+      message: `hub: ${id} - correction (via admin)`,
     };
   };
 }

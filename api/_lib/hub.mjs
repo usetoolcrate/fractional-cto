@@ -1,9 +1,9 @@
 // The task hub behind /admin/work. The hub is a private GitHub repo of markdown
 // (aschottky/hub: NOW.md, LOG.md, INBOX.md, projects/*.md) that Claude keeps
 // current. This reads it with a read-only token and turns it into JSON for the
-// page. The page can also tick things off (api/_lib/hub-write.mjs builds the
-// edits; commitFiles here pushes them as one commit). Anything bigger than
-// "done" still goes through a hub session.
+// page. The page can also tick things off and apply corrections Claude drafts
+// (api/_lib/hub-write.mjs builds the edits; commitFiles here pushes them as one
+// commit). Anything bigger still goes through a hub session.
 //
 // Env: HUB_GITHUB_TOKEN (fine-grained token, Contents: read and write, on the
 // hub repo only), HUB_REPO (default "aschottky/hub"), HUB_BRANCH (default "main").
@@ -37,6 +37,10 @@ async function gh(path, { raw = false, method = "GET", body } = {}) {
 }
 
 const file = (name, ref = BRANCH()) => gh(`contents/${name}?ref=${encodeURIComponent(ref)}`, { raw: true });
+
+// One file of the hub as raw text, at the branch tip. For the Projects card: the
+// current project file Claude edits, and the correction rules in CLAUDE.md.
+export const hubFile = (name) => file(name);
 
 export async function loadHub({ fresh = false } = {}) {
   if (!fresh && cache && Date.now() - cache.at < CACHE_MS) return cache.data;

@@ -83,9 +83,20 @@ To add a site's stats: in Analytics, add that service account as a **Viewer** on
 
 What is in flight, what is next, and what got done, behind the same admin sign-in. The page shows the task hub and can tick things off in it; anything bigger than "done" goes through a hub session.
 
-- The hub is the private repo `aschottky/hub` (markdown: `NOW.md`, `LOG.md`, `INBOX.md`, `projects/*.md`). Claude keeps it current; corrections go through a hub session (`@project` and what to change), not this page.
+- The hub is the private repo `aschottky/hub` (markdown: `NOW.md`, `LOG.md`, `INBOX.md`, `projects/*.md`). Claude keeps it current. Small corrections can be made from this page (see Projects below); anything bigger goes through a hub session.
 - `api/admin/work.mjs` reads it through the GitHub API (`api/_lib/hub.mjs`) and caches the result for a minute. The Refresh button skips the cache.
 - It needs `HUB_GITHUB_TOKEN` in Vercel (Production, sensitive): a fine-grained GitHub token limited to the `aschottky/hub` repo with **Contents: Read and write** and nothing else. Until it is set, the page says the hub isn't connected; with a read-only token the page loads but Done says the token can't write.
 - Done on the current task logs it and moves the first queue item up. Done on a queue item removes and logs it. Ticking a task in a project or in "This week" checks it off (untick to reopen). Each is one commit to the hub (`api/_lib/hub-write.mjs`) with a `LOG.md` line marked "(via admin)". If the hub changed since the page loaded, the edit is refused and the page reloads.
 - Optional: `HUB_REPO` (default `aschottky/hub`) and `HUB_BRANCH` (default `main`).
 - This repo is public, so nothing from the hub is committed here. It is fetched at request time and only sent to a signed-in admin.
+
+### Projects: flip through the cards and tell Claude what changed
+
+The Projects switch at the top of `/admin/work` (also `/admin/work#projects`) shows one project at a time: front matter, Next action, open tasks, waiting-on and the newest log lines for it. Prev/Next and the arrow keys move between cards; the chips filter by status. Order is active, waiting, paused, someday, then by deadline.
+
+Each card has a box, "Tell Claude what changed". It is the admin-page version of a hub correction (`@project` plus plain words in a hub session):
+
+- `api/admin/hub-correct.mjs` reads the project file and the "Corrections" section of the hub's own `CLAUDE.md` (so the rules live in one place), sends both with today's date and the text to the Claude API, and returns the complete updated file, a `LOG.md` line and a one-line summary. The page shows the change as a diff. Nothing is written at this point.
+- Apply sends the result to `api/admin/work.mjs` (action `correct`), which commits the project file and the `LOG.md` line in one commit, `hub: <project> - correction (via admin)`. If the project file changed in the hub between asking and applying, the apply is refused and you ask again.
+- It needs `ANTHROPIC_API_KEY` in Vercel (Production, sensitive). The key never reaches the browser. Until it is set, the box says Claude isn't connected. Optional: `ANTHROPIC_MODEL` (default `claude-opus-5-5`).
+- The call is made with `fetch` (no SDK, this repo has no npm dependencies), non-streaming, a 75 s timeout, and a 90 s function limit in `vercel.json`. Errors (timeout, bad key, Claude busy or declining) show on the card; nothing is applied on error.
